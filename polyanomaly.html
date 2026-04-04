@@ -2016,7 +2016,22 @@ let P_alertMode = 'immediate';
 let P_alertHistory = [];
 let P_charts = {};
 
-// CORS proxy chain
+// Supabase-hosted proxy for Polymarket (reliable, same project as Kalshi proxy)
+const P_SUPABASE_PROXY = 'https://nigntdyuqxjktmaxttkc.supabase.co/functions/v1/polymarket-proxy';
+
+function P_buildSupabaseProxyUrl(apiUrl) {
+  try {
+    const u = new URL(apiUrl);
+    const params = new URLSearchParams();
+    params.set('host', u.host);
+    params.set('path', u.pathname);
+    // Forward all original query params
+    for (const [k, v] of u.searchParams.entries()) params.set(k, v);
+    return P_SUPABASE_PROXY + '?' + params.toString();
+  } catch(e) { return null; }
+}
+
+// Public CORS fallbacks (used only if Supabase proxy fails)
 const P_CORS_PROXIES = [
   url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
   url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
@@ -2025,6 +2040,26 @@ const P_CORS_PROXIES = [
 
 async function P_fetchWithProxyFallback(apiUrl, timeout) {
   timeout = timeout || 8000;
+
+  // --- Primary: Supabase Edge Function proxy (no CORS issues) ---
+  const supabaseUrl = P_buildSupabaseProxyUrl(apiUrl);
+  if (supabaseUrl) {
+    try {
+      const res = await Promise.race([
+        fetch(supabaseUrl, { headers: { 'Accept': 'application/json' } }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), timeout))
+      ]);
+      if (res.ok) {
+        const text = await res.text();
+        try {
+          const data = JSON.parse(text);
+          if (Array.isArray(data) || (data && typeof data === 'object' && !data.error)) return data;
+        } catch(e) {}
+      }
+    } catch(e) { /* fall through to public proxies */ }
+  }
+
+  // --- Fallback: public CORS proxies ---
   for (const proxyFn of P_CORS_PROXIES) {
     try {
       const res = await Promise.race([
@@ -2039,9 +2074,9 @@ async function P_fetchWithProxyFallback(apiUrl, timeout) {
       if (data && data.contents) {
         try { data = JSON.parse(data.contents); } catch(e) { continue; }
       }
-      if (Array.isArray(data)) return data; // including empty arrays
+      if (Array.isArray(data)) return data;
       if (data && typeof data === 'object') return data;
-    } catch(e) { /* try next proxy */ }
+    } catch(e) { /* try next */ }
   }
   return null;
 }
@@ -2172,10 +2207,7 @@ async function P_manualRefresh() {
   try {
     const data = await P_fetchWithProxyFallback('https://data-api.polymarket.com/trades?limit=200', 10000);
     if (!data || !Array.isArray(data) || data.length === 0) {
-      showToast('No trade data returned — all CORS proxies may be down');
-      if (statusEl) statusEl.querySelector && (statusEl.querySelector('p') || {}).textContent
-        !== undefined && statusEl.insertAdjacentHTML('beforeend',
-          '<p style="color:var(--accent-amber);font-size:0.8rem;margin-top:8px">CORS proxy unavailable — try again in 30s</p>');
+      showToast('No trade data returned — check connection');
     } else {
       showToast('Fetched ' + data.length + ' Polymarket trades', 'info');
       P_processTradeBatch(data);
