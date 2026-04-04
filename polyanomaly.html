@@ -1,0 +1,4273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
+<title>Polyanomaly — Anomaly Detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+/* ============================================================
+   POLYANOMALY — DESIGN SYSTEM
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-primary:    #0e1117;
+  --bg-surface:    #161b27;
+  --bg-elevated:   #1e2535;
+  --accent:        #4f8ef7;
+  --accent-green:  #22c55e;
+  --accent-red:    #ef4444;
+  --accent-amber:  #f59e0b;
+  --text-primary:  #e8eaf0;
+  --text-secondary:#8892a4;
+  --border:        #2a3347;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  --radius:    8px;
+  --radius-lg: 12px;
+  --radius-sm: 5px;
+  --shadow:    0 2px 12px rgba(0,0,0,0.5);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.65);
+}
+
+html { font-size: 14px; scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.5;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+
+.app-wrap {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+
+.app-header {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 8px;
+  gap: 16px;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.brand-name {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.brand-sub {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.last-refresh {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.refresh-btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.refresh-btn-icon:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(79,142,247,0.08);
+}
+.refresh-btn-icon.spinning {
+  animation: spin 0.7s linear infinite;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   TAB BAR (top, desktop)
+   ============================================================ */
+
+.tab-bar {
+  display: flex;
+  border-top: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 20px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  position: relative;
+  top: 1px;
+}
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(79,142,247,0.15);
+  color: var(--accent);
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  min-width: 20px;
+}
+
+/* ============================================================
+   TAB PANELS
+   ============================================================ */
+
+.tab-panel {
+  display: none;
+  flex: 1;
+  padding: 20px;
+  padding-bottom: 80px; /* clearance for mobile tab bar */
+}
+.tab-panel.active { display: block; }
+
+@media (min-width: 768px) {
+  .tab-panel { padding-bottom: 20px; }
+}
+
+/* ============================================================
+   CONTROLS BAR
+   ============================================================ */
+
+.controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.pill {
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  user-select: none;
+}
+.pill:hover { border-color: var(--accent); color: var(--text-primary); }
+.pill.active {
+  background: rgba(79,142,247,0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.sliders {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.slider-group {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.slider-label {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.slider-val {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--accent);
+  min-width: 26px;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 80px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+/* ============================================================
+   FLAG GRID (two-column on desktop)
+   ============================================================ */
+
+.flag-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 768px) {
+  .flag-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+}
+
+/* ============================================================
+   FLAG CARD
+   ============================================================ */
+
+.flag-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 15px 15px 12px;
+  cursor: pointer;
+  transition: all 0.18s;
+  position: relative;
+  overflow: hidden;
+}
+
+.flag-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  border-radius: 4px 0 0 4px;
+  background: var(--accent);
+}
+
+.flag-card.tier-amber::before { background: var(--accent-amber); }
+.flag-card.tier-green::before { background: var(--accent-green); }
+.flag-card.tier-blue::before  { background: var(--accent); }
+
+.flag-card:hover {
+  border-color: rgba(79,142,247,0.4);
+  background: var(--bg-elevated);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+/* Card top: score + title */
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.card-title-block {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-title {
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin-bottom: 5px;
+}
+
+.card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.67rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.chip-cat {
+  background: rgba(79,142,247,0.12);
+  color: var(--accent);
+  border: 1px solid rgba(79,142,247,0.25);
+}
+
+.chip-yes {
+  background: rgba(34,197,94,0.12);
+  color: var(--accent-green);
+  border: 1px solid rgba(34,197,94,0.25);
+}
+
+.chip-no {
+  background: rgba(239,68,68,0.12);
+  color: var(--accent-red);
+  border: 1px solid rgba(239,68,68,0.25);
+}
+
+.chip-pattern {
+  background: rgba(255,255,255,0.04);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.chip-pattern.jit    { background: rgba(239,68,68,0.10); color: var(--accent-red); border-color: rgba(239,68,68,0.25); }
+.chip-pattern.whale  { background: rgba(245,158,11,0.10); color: var(--accent-amber); border-color: rgba(245,158,11,0.25); }
+.chip-pattern.pi     { background: rgba(34,197,94,0.10); color: var(--accent-green); border-color: rgba(34,197,94,0.25); }
+.chip-pattern.obi    { background: rgba(79,142,247,0.10); color: var(--accent); border-color: rgba(79,142,247,0.25); }
+.chip-pattern.sweep  { background: rgba(245,158,11,0.10); color: var(--accent-amber); border-color: rgba(245,158,11,0.25); }
+.chip-pattern.cal    { background: rgba(124,92,191,0.12); color: #a78bfa; border-color: rgba(124,92,191,0.25); }
+.chip-pattern.sybil  { background: rgba(42,157,143,0.12); color: #2dd4bf; border-color: rgba(42,157,143,0.25); }
+.chip-pattern.dorm   { background: rgba(245,158,11,0.10); color: var(--accent-amber); border-color: rgba(245,158,11,0.25); }
+.chip-pattern.cat    { background: rgba(34,197,94,0.10); color: var(--accent-green); border-color: rgba(34,197,94,0.25); }
+.chip-pattern.user   { background: rgba(239,68,68,0.10); color: var(--accent-red); border-color: rgba(239,68,68,0.25); }
+
+/* Score badge (top-right) */
+.score-badge {
+  font-family: var(--font-mono);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+  padding-top: 2px;
+  text-align: right;
+  min-width: 48px;
+}
+.score-badge.score-muted { color: var(--text-secondary); }
+.score-badge.score-green { color: var(--accent-green); }
+.score-badge.score-amber { color: var(--accent-amber); }
+
+/* Score bar */
+.score-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.score-bar-track {
+  flex: 1;
+  height: 5px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.score-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--accent-green), var(--accent-amber));
+  transition: width 0.4s ease;
+}
+.score-bar-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  width: 80px;
+  flex-shrink: 0;
+}
+.score-bar-num {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  width: 24px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Metrics mini-grid */
+.card-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 10px 0;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metric-label {
+  font-size: 0.62rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metric-val {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Card footer */
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  gap: 8px;
+}
+
+.card-time {
+  font-size: 0.67rem;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+/* Action Button: "Search on Platform" */
+.search-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--accent);
+  font-family: var(--font-sans);
+  font-size: 0.74rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.search-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ============================================================
+   PATTERN COUNTER BAR
+   ============================================================ */
+
+.pattern-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.pat-counter {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.72rem;
+}
+
+.pat-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pat-name {
+  color: var(--text-secondary);
+}
+
+.pat-num {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   SECTION TITLE
+   ============================================================ */
+
+.section-label {
+  font-size: 0.69rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.flag-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(79,142,247,0.12);
+  color: var(--accent);
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  min-width: 20px;
+}
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+  gap: 8px;
+  grid-column: 1 / -1;
+}
+
+.empty-state p { font-size: 0.88rem; }
+.empty-state .hint { font-size: 0.76rem; color: var(--text-secondary); opacity: 0.7; }
+
+/* ============================================================
+   COLLAPSIBLE SECTIONS
+   ============================================================ */
+
+.collapsible-wrap {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin: 16px 0;
+  overflow: hidden;
+}
+
+.collapsible-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.collapsible-head:hover { background: var(--bg-elevated); }
+
+.collapsible-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.collapsible-chev {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  transition: transform 0.2s;
+}
+.collapsible-wrap.open .collapsible-chev { transform: rotate(180deg); }
+
+.collapsible-body {
+  display: none;
+  padding: 0 16px 16px;
+}
+.collapsible-wrap.open .collapsible-body { display: block; }
+
+/* ============================================================
+   DRILL-DOWN PANEL (side panel for Kalshi)
+   ============================================================ */
+
+.k-drill-panel {
+  position: fixed;
+  right: 0; top: 0; bottom: 0;
+  width: 420px;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: var(--shadow-lg);
+}
+.k-drill-panel.open { transform: translateX(0); }
+
+.k-drill-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.k-drill-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.close-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.close-btn:hover { background: var(--bg-elevated); color: var(--text-primary); }
+
+.k-drill-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px 16px;
+}
+
+.drill-section { margin-bottom: 18px; }
+
+.drill-section-title {
+  font-size: 0.67rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 9px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.emulate-box {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px;
+}
+.emulate-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+.emulate-label { font-size: 0.73rem; color: var(--text-secondary); }
+.emulate-val {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.trade-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.trade-table th {
+  font-size: 0.63rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-secondary);
+  text-align: left;
+  padding: 0 8px 5px 0;
+  border-bottom: 1px solid var(--border);
+}
+.trade-table td {
+  font-family: var(--font-mono);
+  font-size: 0.73rem;
+  color: var(--text-secondary);
+  padding: 5px 8px 5px 0;
+  border-bottom: 1px solid rgba(42,51,71,0.5);
+  vertical-align: middle;
+}
+.trade-table tr:last-child td { border-bottom: none; }
+.trade-table tr:hover td { color: var(--text-primary); }
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+.info-item { display: flex; flex-direction: column; gap: 2px; }
+.info-item-label {
+  font-size: 0.63rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.info-item-val {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.info-item-val.copyable { cursor: pointer; }
+.info-item-val.copyable:hover { color: var(--accent); }
+
+.live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  box-shadow: 0 0 5px var(--accent-green);
+  animation: pulse-dot 2s infinite;
+  flex-shrink: 0;
+}
+.live-dot.grey { background: var(--text-secondary); box-shadow: none; animation: none; }
+@keyframes pulse-dot { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+/* ============================================================
+   POLYMARKET DRILL PANEL (dark sidebar style)
+   ============================================================ */
+
+.p-drill-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 299;
+  display: none;
+}
+.p-drill-backdrop.open { display: block; }
+
+.p-drill-panel {
+  position: fixed;
+  top: 0; right: -440px;
+  width: 420px;
+  height: 100vh;
+  background: var(--bg-elevated);
+  border-left: 1px solid var(--border);
+  transition: right 300ms ease;
+  z-index: 300;
+  overflow-y: auto;
+  padding: 22px;
+  box-shadow: var(--shadow-lg);
+}
+.p-drill-panel.open { right: 0; }
+
+.p-drill-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  gap: 10px;
+}
+.p-drill-panel-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.p-drill-close {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 150ms;
+}
+.p-drill-close:hover { background: rgba(255,255,255,0.12); }
+
+.p-drill-section-label {
+  font-size: 0.67rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  margin-bottom: 9px;
+}
+
+.bet-row {
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  padding: 11px;
+  margin-bottom: 7px;
+  border-left: 3px solid;
+}
+.bet-row.yes { border-left-color: var(--accent-green); }
+.bet-row.no  { border-left-color: var(--accent-red); }
+
+.bet-row-top {
+  display: flex; align-items: center; gap: 7px; margin-bottom: 5px; flex-wrap: wrap;
+}
+.outcome-badge {
+  font-size: 0.63rem; font-weight: 600; font-family: var(--font-mono);
+  padding: 2px 7px; border-radius: 99px;
+}
+.outcome-yes { background: rgba(34,197,94,0.18); color: #86efac; }
+.outcome-no  { background: rgba(239,68,68,0.18); color: #fca5a5; }
+
+.bet-meta {
+  display: flex; gap: 12px; font-size: 0.68rem;
+  color: var(--text-secondary); font-family: var(--font-mono);
+  flex-wrap: wrap; margin-bottom: 7px;
+}
+.bet-meta-val { color: var(--text-primary); font-weight: 500; }
+
+.bet-links { display: flex; gap: 5px; flex-wrap: wrap; }
+.bet-link {
+  font-size: 0.63rem; padding: 2px 8px; border-radius: 4px;
+  background: rgba(255,255,255,0.05);
+  color: var(--text-secondary);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  transition: all 150ms; white-space: nowrap;
+}
+.bet-link:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+
+.drill-wallet-info {
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px; padding: 11px; margin-top: 14px;
+}
+.drill-wallet-row {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 6px;
+}
+.drill-wallet-row:last-child { margin-bottom: 0; }
+.drill-wallet-key { color: var(--text-secondary); font-size: 0.7rem; }
+.drill-wallet-val {
+  color: var(--text-primary); font-family: var(--font-mono);
+  font-size: 0.7rem; cursor: pointer;
+}
+.drill-wallet-val:hover { color: var(--accent); }
+.drill-copy-hint { font-size: 0.63rem; color: var(--text-secondary); margin-top: 3px; opacity: 0.6; }
+
+.drill-wallet-stats {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 16px;
+}
+.drill-stat-card {
+  background: rgba(255,255,255,0.04); border-radius: 8px; padding: 9px 11px;
+}
+.drill-stat-label { font-size: 0.63rem; color: var(--text-secondary); margin-bottom: 2px; }
+.drill-stat-val {
+  font-family: var(--font-mono); font-size: 1.1rem; font-weight: 500; color: var(--text-primary);
+}
+
+.drill-pattern-pills { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 14px; }
+.drill-pattern-pill {
+  font-size: 0.63rem; font-family: var(--font-mono);
+  padding: 2px 7px; border-radius: 4px;
+  background: rgba(255,255,255,0.07); color: var(--text-secondary);
+}
+
+.drill-total-row {
+  display: flex; justify-content: space-between; font-size: 0.75rem;
+  padding: 9px 11px; background: rgba(255,255,255,0.04);
+  border-radius: 6px; margin-top: 7px; color: var(--text-secondary);
+}
+.drill-total-val { font-family: var(--font-mono); color: var(--text-primary); font-weight: 500; }
+
+.drill-market-group { margin-bottom: 14px; }
+.drill-market-group-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 9px 11px; background: rgba(255,255,255,0.04);
+  border-left: 3px solid var(--accent); border-radius: 6px;
+  cursor: pointer; margin-bottom: 5px; gap: 9px;
+}
+.drill-market-group-title {
+  font-size: 0.75rem; font-weight: 500; color: var(--text-primary); line-height: 1.35; flex: 1;
+}
+.drill-market-summary { font-size: 0.63rem; color: var(--text-secondary); margin-top: 2px; font-family: var(--font-mono); }
+.drill-market-toggle { font-size: 0.75rem; color: var(--text-secondary); flex-shrink: 0; }
+
+.drill-spinner {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; font-size: 0.75rem; color: var(--text-secondary); padding: 22px 0;
+}
+.spinner-ring {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(79,142,247,0.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+
+.collapsible-content { display: none; }
+.collapsible-content.open { display: block; }
+hr.panel-divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+/* ============================================================
+   ALERT CARD (Polymarket style in dark)
+   ============================================================ */
+
+.alert-card {
+  background: var(--bg-surface);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent-amber);
+  overflow: hidden;
+  transition: box-shadow 200ms;
+  margin-bottom: 8px;
+}
+.alert-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+.alert-card.extreme { border-left-color: var(--accent-red); }
+.alert-card.high    { border-left-color: var(--accent-amber); }
+
+.alert-header {
+  display: flex; align-items: flex-start; gap: 11px;
+  padding: 13px 15px; cursor: pointer; user-select: none;
+}
+.alert-score {
+  font-family: var(--font-mono); font-size: 1.75rem; font-weight: 700;
+  line-height: 1; flex-shrink: 0; width: 44px; text-align: center; padding-top: 2px;
+}
+.score-extreme { color: var(--accent-red); }
+.score-high    { color: var(--accent-amber); }
+
+.alert-meta { flex: 1; min-width: 0; }
+.alert-market {
+  font-size: 0.88rem; font-weight: 600; color: var(--text-primary);
+  line-height: 1.35; margin-bottom: 5px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.alert-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.tag {
+  font-size: 0.63rem; font-weight: 500; padding: 2px 6px;
+  border-radius: 4px; font-family: var(--font-mono); letter-spacing: 0.02em;
+}
+.tag-cat { background: var(--bg-elevated); color: var(--text-secondary); }
+.tag-cal    { background: rgba(124,92,191,0.12); color: #a78bfa; }
+.tag-sybil  { background: rgba(42,157,143,0.12); color: #2dd4bf; }
+.tag-dorm   { background: rgba(245,158,11,0.10); color: var(--accent-amber); }
+.tag-cat-p  { background: rgba(34,197,94,0.10); color: var(--accent-green); }
+.tag-user   { background: rgba(239,68,68,0.10); color: var(--accent-red); }
+.tag-jit    { background: rgba(239,68,68,0.12); color: var(--accent-red); }
+.tag-yes    { background: rgba(34,197,94,0.12); color: var(--accent-green); }
+.tag-no     { background: rgba(239,68,68,0.12); color: var(--accent-red); }
+
+.alert-right {
+  flex-shrink: 0; text-align: right;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+}
+.alert-time { font-size: 0.63rem; font-family: var(--font-mono); color: var(--text-secondary); }
+.alert-value { font-size: 0.75rem; font-weight: 500; color: var(--text-primary); font-family: var(--font-mono); }
+.chevron-alert {
+  font-size: 0.75rem; color: var(--text-secondary);
+  transition: transform 250ms; margin-top: 2px;
+}
+.chevron-alert.open { transform: rotate(180deg); }
+
+.alert-body {
+  display: none; padding: 0 15px 14px;
+  border-top: 1px solid var(--border);
+}
+.alert-body.open { display: block; }
+
+.alert-score-bars { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+.alert-score-bar-row { display: flex; align-items: center; gap: 9px; }
+.alert-score-bar-label { font-size: 0.7rem; color: var(--text-secondary); width: 140px; flex-shrink: 0; }
+.alert-score-bar-track { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.alert-score-bar-fill { height: 100%; border-radius: 3px; background: var(--accent-green); transition: width 400ms ease; }
+.alert-score-bar-fill.high-fill { background: var(--accent-amber); }
+.alert-score-bar-fill.extreme-fill { background: var(--accent-red); }
+.alert-score-bar-val { font-size: 0.68rem; font-family: var(--font-mono); color: var(--text-secondary); width: 26px; text-align: right; }
+
+.alert-actions { display: flex; gap: 7px; margin-top: 10px; flex-wrap: wrap; }
+
+/* ============================================================
+   PATTERNS GRID (Polymarket patterns tab)
+   ============================================================ */
+
+.patterns-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+@media (max-width: 768px) { .patterns-grid { grid-template-columns: 1fr; } }
+
+.pattern-card {
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  border-left: 4px solid;
+  padding: 15px;
+}
+.pattern-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.pattern-name { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); }
+.pattern-count-num {
+  font-family: var(--font-mono); font-size: 1.35rem; font-weight: 500; line-height: 1;
+}
+.pattern-source { font-size: 0.68rem; color: var(--text-secondary); margin-bottom: 10px; }
+.pattern-signals { list-style: none; margin-bottom: 10px; }
+.pattern-signal {
+  display: flex; gap: 5px; font-size: 0.73rem; color: var(--text-secondary); margin-bottom: 4px; align-items: flex-start;
+}
+.pattern-signal::before { content: "›"; font-weight: 600; flex-shrink: 0; margin-top: -1px; color: var(--accent); }
+.signal-threshold {
+  font-family: var(--font-mono); font-size: 0.63rem;
+  background: var(--bg-elevated); padding: 1px 5px; border-radius: 3px; color: var(--text-secondary); white-space: nowrap;
+}
+.pattern-wallets { border-top: 1px solid var(--border); padding-top: 9px; margin-top: 3px; }
+.pattern-wallets-label { font-size: 0.63rem; color: var(--text-secondary); margin-bottom: 5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; }
+.pattern-wallet-link {
+  display: inline-block; font-size: 0.7rem; font-family: var(--font-mono);
+  color: var(--accent); cursor: pointer; margin-right: 7px; margin-bottom: 3px;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.pattern-no-wallets { font-size: 0.7rem; color: var(--text-secondary); font-style: italic; }
+
+/* ============================================================
+   BACKSCRAPE + DATA TABLE
+   ============================================================ */
+
+.backscrape-controls {
+  background: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border);
+  padding: 15px; display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 14px;
+}
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-label { font-size: 0.68rem; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+.form-select, .form-input {
+  background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 6px 9px; font-size: 0.8rem; font-family: var(--font-sans); color: var(--text-primary); outline: none; transition: border-color 150ms;
+}
+.form-select:focus, .form-input:focus { border-color: var(--accent); }
+.form-range { accent-color: var(--accent); width: 110px; }
+.range-val { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary); }
+.slider-row { display: flex; align-items: center; gap: 7px; }
+
+.progress-section {
+  background: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border);
+  padding: 14px; margin-bottom: 14px;
+}
+.progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.progress-bar-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+.progress-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 300ms ease; }
+.progress-log {
+  font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-secondary);
+  max-height: 90px; overflow-y: auto; line-height: 1.7;
+}
+
+.section-card { background: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 14px; margin-bottom: 14px; }
+.section-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 11px; }
+.section-card-title { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); }
+
+.results-table-wrap { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+.data-table th {
+  text-align: left; padding: 8px 11px; font-size: 0.63rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-secondary);
+  background: var(--bg-elevated); border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+.data-table td {
+  padding: 9px 11px; border-bottom: 1px solid var(--border); color: var(--text-primary); vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: rgba(255,255,255,0.02); }
+.data-table .mono { font-family: var(--font-mono); }
+
+/* ============================================================
+   WALLET WATCH
+   ============================================================ */
+
+.wallet-row { cursor: pointer; }
+.wallet-row:hover td { background: rgba(79,142,247,0.04); }
+.wallet-address-cell {
+  font-family: var(--font-mono); font-size: 0.75rem;
+  color: var(--accent); text-decoration: underline; text-underline-offset: 2px;
+}
+
+/* ============================================================
+   STATS BAR
+   ============================================================ */
+
+.stats-row {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.stat-pill {
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 5px 11px;
+  font-size: 0.75rem; font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+.stat-pill strong { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); }
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+
+.toast-container {
+  position: fixed; bottom: 72px; left: 50%;
+  transform: translateX(-50%); z-index: 600;
+  display: flex; flex-direction: column; gap: 6px; align-items: center; pointer-events: none;
+}
+@media (min-width: 768px) { .toast-container { bottom: 20px; } }
+
+.toast {
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  color: var(--text-primary); font-size: 0.78rem; padding: 7px 16px;
+  border-radius: 20px; box-shadow: var(--shadow);
+  animation: toast-in 0.2s ease, toast-out 0.3s 2.5s ease forwards;
+  pointer-events: all;
+}
+.toast.success { border-color: var(--accent-green); color: var(--accent-green); }
+.toast.error   { border-color: var(--accent-red); color: var(--accent-red); }
+@keyframes toast-in { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
+@keyframes toast-out { to{opacity:0;transform:translateY(5px);} }
+
+/* ============================================================
+   MISC
+   ============================================================ */
+
+.mono { font-family: var(--font-mono); }
+.divider { height: 1px; background: var(--border); margin: 14px 0; }
+.color-green { color: var(--accent-green); }
+.color-red   { color: var(--accent-red); }
+.color-amber { color: var(--accent-amber); }
+.color-accent{ color: var(--accent); }
+.score-extreme-label { color: var(--accent-red); }
+.score-high-label    { color: var(--accent-amber); }
+.no-results { padding: 18px; text-align: center; color: var(--text-secondary); font-size: 0.78rem; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: var(--radius-sm);
+  font-family: var(--font-sans); font-size: 0.76rem; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  border: 1px solid var(--border); background: var(--bg-elevated); color: var(--text-secondary);
+}
+.btn:hover { background: var(--bg-surface); color: var(--text-primary); border-color: var(--text-secondary); }
+.btn.btn-accent {
+  border-color: var(--accent); color: var(--accent); background: rgba(79,142,247,0.08);
+}
+.btn.btn-accent:hover { background: var(--accent); color: #fff; }
+.btn.btn-primary {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+.btn.btn-primary:hover { background: #3a7de8; }
+.btn.btn-ghost { background: transparent; }
+.btn.btn-sm { padding: 4px 9px; font-size: 0.7rem; }
+.btn.btn-xs { padding: 2px 7px; font-size: 0.65rem; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ============================================================
+   KALSHI-SPECIFIC SECTIONS
+   ============================================================ */
+
+.k-filter-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding-bottom: 12px; margin-bottom: 4px;
+}
+
+.k-pattern-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+
+.k-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px; margin-top: 10px;
+}
+@media (max-width: 900px) { .k-charts-grid { grid-template-columns: 1fr; } }
+
+.k-chart-card {
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 13px;
+}
+.k-chart-title {
+  font-size: 0.68rem; font-weight: 600; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--text-secondary); margin-bottom: 9px;
+}
+.chart-canvas-wrap { position: relative; height: 150px; }
+
+.bs-select {
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text-primary);
+  font-family: var(--font-sans); font-size: 0.76rem; padding: 5px 9px;
+  outline: none; cursor: pointer; transition: border-color 0.15s;
+}
+.bs-select:hover, .bs-select:focus { border-color: var(--accent); }
+
+.backscrape-table-wrap { overflow-x: auto; max-height: 380px; overflow-y: auto; }
+.backscrape-table {
+  width: 100%; border-collapse: collapse; min-width: 560px;
+}
+.backscrape-table th {
+  font-size: 0.63rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--text-secondary); text-align: left; padding: 0 11px 7px 0;
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg-surface);
+}
+.backscrape-table td {
+  font-size: 0.75rem; color: var(--text-secondary); padding: 7px 11px 7px 0;
+  border-bottom: 1px solid rgba(42,51,71,0.4); vertical-align: middle;
+}
+.backscrape-table td:first-child { font-family: var(--font-mono); font-size: 0.7rem; }
+.backscrape-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+.bs-progress { display: flex; align-items: center; gap: 9px; margin-top: 9px; font-size: 0.75rem; color: var(--text-secondary); }
+.bs-progress-bar-track { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.bs-progress-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
+
+.outcome-cat-pill {
+  display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px;
+  border: 1px solid rgba(232,234,240,0.15); border-radius: 20px;
+  font-size: 0.7rem; color: rgba(232,234,240,0.6);
+}
+
+/* ============================================================
+   MOBILE BOTTOM TAB BAR
+   ============================================================ */
+
+.bottom-tab-bar {
+  display: flex;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
+  z-index: 150;
+  height: 56px;
+}
+@media (min-width: 768px) { .bottom-tab-bar { display: none; } }
+@media (max-width: 767px)  { .tab-bar { display: none; } }
+
+.bottom-tab-btn {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; border: none; background: transparent;
+  color: var(--text-secondary); font-family: var(--font-sans); font-size: 0.65rem;
+  font-weight: 500; cursor: pointer; transition: all 0.15s; padding: 6px 0;
+}
+.bottom-tab-btn.active { color: var(--accent); }
+.bottom-tab-icon { font-size: 1.2rem; }
+
+/* ============================================================
+   ANALYTICS
+   ============================================================ */
+.charts-grid-2 {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
+}
+@media (max-width: 768px) { .charts-grid-2 { grid-template-columns: 1fr; } }
+.chart-card {
+  background: var(--bg-surface); border-radius: var(--radius-lg);
+  border: 1px solid var(--border); padding: 14px;
+}
+.chart-title { font-size: 0.82rem; font-weight: 600; margin-bottom: 12px; color: var(--text-primary); }
+.chart-wrap { height: 190px; position: relative; }
+
+/* Gmail alerts */
+.gmail-card {
+  background: var(--bg-surface); border-radius: var(--radius-lg);
+  border: 1px solid var(--border); padding: 18px; max-width: 560px;
+}
+.toggle-group {
+  display: flex; gap: 0; border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; width: fit-content; margin-bottom: 14px;
+}
+.toggle-btn {
+  padding: 6px 14px; font-size: 0.75rem; font-weight: 500; cursor: pointer;
+  background: transparent; border: none; color: var(--text-secondary); transition: all 150ms;
+}
+.toggle-btn.active { background: var(--accent); color: #fff; }
+.webhook-section { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 14px; }
+.webhook-row { display: flex; gap: 7px; }
+.webhook-row .form-input { flex: 1; }
+
+/* Methodology */
+.score-layer-card { background: var(--bg-surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; margin-bottom: 7px; }
+.score-layer-header { display: flex; align-items: center; gap: 11px; padding: 11px 14px; cursor: pointer; user-select: none; }
+.score-layer-weight { font-family: var(--font-mono); font-size: 1.25rem; font-weight: 500; color: var(--accent); width: 38px; flex-shrink: 0; }
+.score-layer-name { font-size: 0.82rem; font-weight: 500; flex: 1; color: var(--text-primary); }
+.score-layer-body { display: none; padding: 0 14px 12px; font-size: 0.75rem; color: var(--text-secondary); line-height: 1.6; border-top: 1px solid var(--border); }
+.score-layer-body.open { display: block; padding-top: 10px; }
+.method-patterns-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+@media (max-width: 768px) { .method-patterns-grid { grid-template-columns: 1fr 1fr; } }
+.method-pattern-card { background: var(--bg-surface); border-radius: var(--radius); border-left: 3px solid; padding: 11px; font-size: 0.75rem; }
+.method-pattern-name { font-weight: 600; margin-bottom: 3px; font-size: 0.82rem; color: var(--text-primary); }
+.method-pattern-threshold { font-family: var(--font-mono); font-size: 0.63rem; color: var(--text-secondary); }
+
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 600px) { .settings-grid { grid-template-columns: 1fr; } }
+.settings-group { display: flex; flex-direction: column; gap: 4px; }
+.settings-label { font-size: 0.7rem; color: var(--text-secondary); }
+.settings-note {
+  font-size: 0.7rem; color: var(--text-secondary); line-height: 1.6;
+  margin-top: 9px; padding: 9px; background: var(--bg-elevated);
+  border-radius: var(--radius-sm); border-left: 3px solid rgba(79,142,247,0.4);
+}
+
+/* Scan overlay */
+.scan-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(14,17,23,0.75); z-index: 400;
+  align-items: center; justify-content: center;
+}
+.scan-overlay.active { display: flex; }
+.scan-box {
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 22px 30px;
+  text-align: center; display: flex; flex-direction: column;
+  align-items: center; gap: 11px; min-width: 240px;
+}
+.scan-spinner {
+  width: 34px; height: 34px; border: 3px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.scan-label { font-size: 0.85rem; color: var(--text-secondary); }
+.scan-sub { font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); }
+
+@media (max-width: 768px) {
+  .k-charts-grid { grid-template-columns: 1fr; }
+  .settings-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .k-filter-bar { flex-direction: column; align-items: flex-start; }
+  .sliders { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+<div class="app-wrap">
+
+  <!-- ============================================================
+       HEADER
+       ============================================================ -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-name">Polyanomaly</span>
+        <span class="brand-sub">anomaly detection</span>
+      </div>
+      <div class="header-right">
+        <span class="last-refresh" id="globalLastRefresh">—</span>
+        <button class="refresh-btn-icon" id="globalRefreshBtn" onclick="globalRefresh()" title="Refresh active engine">&#8635;</button>
+      </div>
+    </div>
+
+    <!-- TAB BAR (desktop) -->
+    <div class="tab-bar" id="desktopTabBar">
+      <button class="tab-btn active" data-tab="polymarket" onclick="switchTab('polymarket')">
+        Polymarket
+        <span class="tab-badge" id="poly-tab-badge">0</span>
+      </button>
+      <button class="tab-btn" data-tab="kalshi" onclick="switchTab('kalshi')">
+        Kalshi
+        <span class="tab-badge" id="kalshi-tab-badge">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       TAB PANEL: POLYMARKET
+       ============================================================ -->
+  <div id="tab-polymarket" class="tab-panel active">
+
+    <!-- Filter pills -->
+    <div class="controls-bar">
+      <div class="pills" id="p-filter-pills">
+        <div class="pill active" data-filter="all">All</div>
+        <div class="pill p-cal" data-filter="cal">Calendar Spread</div>
+        <div class="pill p-sybil" data-filter="sybil">Sybil Splitting</div>
+        <div class="pill p-dorm" data-filter="dorm">Dormancy</div>
+        <div class="pill p-cat" data-filter="cat">Cat. Concentration</div>
+        <div class="pill p-user" data-filter="user">Username Rotation</div>
+        <div class="pill p-jit" data-filter="jit">Just-in-Time</div>
+      </div>
+      <div class="sliders">
+        <span class="slider-label">Pause</span>
+        <button class="btn btn-sm" id="p-pause-btn" onclick="P_togglePause()">&#9646;&#9646; Pause</button>
+        <button class="btn btn-accent btn-sm" onclick="P_manualRefresh()">&#8635; Refresh</button>
+        <span class="slider-val" id="p-countdown">30s</span>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-pill">Extreme <strong id="p-stat-extreme">0</strong></div>
+      <div class="stat-pill">High <strong id="p-stat-high">0</strong></div>
+      <div class="stat-pill">Session <strong id="p-stat-total">0</strong></div>
+    </div>
+
+    <!-- Alerts list -->
+    <div id="p-alerts-container">
+      <div class="empty-state" id="p-empty-state" style="padding:50px 20px;">
+        <svg width="42" height="42" viewBox="0 0 42 42" fill="none"><circle cx="21" cy="21" r="18" stroke="#2a3347" stroke-width="2"/><path d="M21 12v10M21 26v4" stroke="#2a3347" stroke-width="2.5" stroke-linecap="round"/></svg>
+        <p>No alerts yet</p>
+        <span class="hint">Click Refresh to fetch live Polymarket trades.</span>
+      </div>
+    </div>
+
+    <!-- Patterns (collapsible) -->
+    <div class="collapsible-wrap" id="p-patterns-section">
+      <div class="collapsible-head" onclick="toggleCollapsible('p-patterns-section')">
+        <span class="collapsible-title">&#128302; Pattern Analysis</span>
+        <span class="collapsible-chev">&#8964;</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="patterns-grid" id="p-patterns-grid"></div>
+      </div>
+    </div>
+
+    <!-- Backscrape (collapsible) -->
+    <div class="collapsible-wrap" id="p-bs-section">
+      <div class="collapsible-head" onclick="toggleCollapsible('p-bs-section')">
+        <span class="collapsible-title">&#128451; Backscrape</span>
+        <span class="collapsible-chev">&#8964;</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="backscrape-controls">
+          <div class="form-group">
+            <div class="form-label">Category</div>
+            <select class="form-select" id="p-bs-category">
+              <option value="all">All Categories</option>
+              <option value="politics">Politics</option>
+              <option value="crypto">Crypto</option>
+              <option value="sports">Sports</option>
+              <option value="economy">Economy</option>
+              <option value="science">Science</option>
+              <option value="geopolitics">Geopolitics</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <div class="form-label">Depth</div>
+            <select class="form-select" id="p-bs-depth">
+              <option value="100">100 markets</option>
+              <option value="500">500 markets</option>
+              <option value="1000" selected>1000 markets</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <div class="form-label">Min Score <span class="range-val" id="p-bs-min-label">75</span></div>
+            <div class="slider-row">
+              <input type="range" class="form-range" id="p-bs-min-score" min="50" max="99" value="75"
+                oninput="document.getElementById('p-bs-min-label').textContent=this.value">
+            </div>
+          </div>
+          <div style="display:flex;gap:7px;align-items:flex-end;">
+            <button class="btn btn-accent" id="p-bs-start-btn" onclick="P_startBackscrape()">&#9654; Start Scrape</button>
+            <button class="btn btn-sm" id="p-bs-stop-btn" onclick="P_stopBackscrape()" disabled>&#9646;&#9646; Stop</button>
+          </div>
+        </div>
+        <div class="progress-section">
+          <div class="progress-header">
+            <span class="section-card-title" style="font-size:0.8rem;">Scrape Progress</span>
+            <span class="mono" style="font-size:0.68rem;color:var(--text-secondary);" id="p-bs-status-text">Idle</span>
+          </div>
+          <div class="progress-bar-track"><div class="progress-bar-fill" id="p-bs-progress" style="width:0%"></div></div>
+          <div class="progress-log" id="p-bs-log">Ready to scrape…</div>
+        </div>
+        <div class="section-card">
+          <div class="section-card-header">
+            <span class="section-card-title">Results</span>
+            <span id="p-bs-result-count" style="font-size:0.75rem;color:var(--text-secondary)">0 markets scanned</span>
+          </div>
+          <div class="results-table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Market</th><th>Category</th><th>Trades</th><th>Flags</th><th>Top Score</th><th>Action</th></tr></thead>
+              <tbody id="p-bs-results-body"><tr><td colspan="6" style="text-align:center;color:var(--text-secondary);padding:20px;font-size:0.75rem;">No results yet</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wallet Watch (collapsible) -->
+    <div class="collapsible-wrap" id="p-wallets-section">
+      <div class="collapsible-head" onclick="toggleCollapsible('p-wallets-section');P_renderWalletTable()">
+        <span class="collapsible-title">&#128065; Wallet Watch</span>
+        <span class="collapsible-chev">&#8964;</span>
+      </div>
+      <div class="collapsible-body">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+          <button class="btn btn-sm" onclick="P_exportWalletCSV()">&#8595; Export CSV</button>
+        </div>
+        <div class="results-table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Wallet</th><th>Flags</th><th>Max Score</th><th>Win Rate</th><th>Patterns</th><th>Last Active</th><th>Action</th></tr></thead>
+            <tbody id="p-wallet-table-body"><tr><td colspan="7" style="text-align:center;color:var(--text-secondary);padding:20px;font-size:0.75rem;">No flagged wallets yet</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Outcome log (collapsible) -->
+    <div class="collapsible-wrap" id="p-outcomes-section">
+      <div class="collapsible-head" onclick="toggleCollapsible('p-outcomes-section')">
+        <span class="collapsible-title">&#9989; Outcome Log</span>
+        <span class="collapsible-chev">&#8964;</span>
+      </div>
+      <div class="collapsible-body">
+        <div id="p-outcome-summary" style="margin-bottom:14px;padding:11px;background:rgba(79,142,247,0.05);border:1px solid rgba(79,142,247,0.15);border-radius:8px;">
+          <span style="color:var(--text-secondary);font-size:0.75rem;">No resolved flags yet</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tab-polymarket -->
+
+  <!-- ============================================================
+       TAB PANEL: KALSHI
+       ============================================================ -->
+  <div id="tab-kalshi" class="tab-panel">
+
+    <!-- DB status + controls -->
+    <div class="k-filter-bar">
+      <div class="pills" id="k-catPills">
+        <button class="pill active" data-cat="ALL" onclick="K_setCat('ALL')">ALL</button>
+        <button class="pill" data-cat="Politics" onclick="K_setCat('Politics')">Politics</button>
+        <button class="pill" data-cat="Crypto" onclick="K_setCat('Crypto')">Crypto</button>
+        <button class="pill" data-cat="Sports" onclick="K_setCat('Sports')">Sports</button>
+        <button class="pill" data-cat="Economy" onclick="K_setCat('Economy')">Economy</button>
+        <button class="pill" data-cat="Tech" onclick="K_setCat('Tech')">Tech</button>
+        <button class="pill" data-cat="Climate" onclick="K_setCat('Climate')">Climate</button>
+        <button class="pill" data-cat="Geopolitics" onclick="K_setCat('Geopolitics')">Geopolitics</button>
+        <button class="pill" data-cat="Other" onclick="K_setCat('Other')">Other</button>
+      </div>
+      <div class="sliders">
+        <div class="slider-group">
+          <span class="slider-label">Min Score</span>
+          <input type="range" id="k-scoreSlider" min="60" max="99" value="60" oninput="K_onSliderChange()">
+          <span class="slider-val" id="k-scoreSliderVal">60</span>
+        </div>
+        <div class="slider-group">
+          <span class="slider-label">Min Contracts</span>
+          <input type="range" id="k-contractsSlider" min="1" max="500" value="1" oninput="K_onSliderChange()">
+          <span class="slider-val" id="k-contractsSliderVal">1</span>
+        </div>
+        <button class="btn btn-sm" id="k-pauseBtn" onclick="K_togglePause()">&#9646;&#9646; Pause</button>
+        <button class="btn btn-accent btn-sm" id="k-refreshBtn" onclick="K_manualRefresh()">&#8635; Refresh</button>
+        <span class="slider-val" id="k-countdown">30s</span>
+        <div style="width:7px;height:7px;border-radius:50%;background:var(--text-secondary);flex-shrink:0;transition:background 0.3s;" id="k-dbDot" title="IndexedDB status"></div>
+      </div>
+    </div>
+
+    <!-- Pattern counters -->
+    <div class="k-pattern-bar" id="k-patternBar">
+      <div class="pat-counter"><div class="pat-dot" style="background:#ef4444;"></div><span class="pat-name">Pre-Close Surge</span><span class="pat-num" id="k-pn-jit">0</span></div>
+      <div class="pat-counter"><div class="pat-dot" style="background:#f59e0b;"></div><span class="pat-name">Whale Block</span><span class="pat-num" id="k-pn-whale">0</span></div>
+      <div class="pat-counter"><div class="pat-dot" style="background:#22c55e;"></div><span class="pat-name">Price Dislocation</span><span class="pat-num" id="k-pn-pi">0</span></div>
+      <div class="pat-counter"><div class="pat-dot" style="background:#4f8ef7;"></div><span class="pat-name">Book Imbalance</span><span class="pat-num" id="k-pn-obi">0</span></div>
+      <div class="pat-counter"><div class="pat-dot" style="background:#f59e0b;"></div><span class="pat-name">Pre-Close Sweep</span><span class="pat-num" id="k-pn-sweep">0</span></div>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+      <div class="section-label" style="margin:0;">&#9650; Live Flags</div>
+      <span class="flag-count-badge" id="k-flagCountBadge">0</span>
+      <div style="margin-left:auto;display:flex;gap:10px;font-size:0.72rem;color:var(--text-secondary);">
+        <span>Flags: <span class="mono" style="color:var(--accent);" id="k-statFlags">0</span></span>
+        <span>Scanned: <span class="mono" style="color:var(--accent);" id="k-statScanned">0</span></span>
+        <span>Session: <span class="mono" style="color:var(--accent);" id="k-statTime">0:00</span></span>
+      </div>
+    </div>
+
+    <!-- Flag grid -->
+    <div class="flag-grid" id="k-flagGrid">
+      <div class="empty-state" id="k-emptyState">
+        <svg width="42" height="42" viewBox="0 0 42 42" fill="none"><circle cx="21" cy="21" r="18" stroke="#2a3347" stroke-width="2"/><path d="M21 12v10M21 26v4" stroke="#2a3347" stroke-width="2.5" stroke-linecap="round"/></svg>
+        <p>No anomaly flags yet</p>
+        <span class="hint">Click Refresh to scan the Kalshi trade feed.</span>
+      </div>
+    </div>
+
+    <!-- Analytics (collapsible) -->
+    <div class="collapsible-wrap" id="k-chartSection" style="margin-top:18px;">
+      <div class="collapsible-head" onclick="K_toggleSection('k-chartSection')">
+        <span class="collapsible-title">&#128202; Analytics</span>
+        <span class="collapsible-chev">&#8964;</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="k-charts-grid">
+          <div class="k-chart-card"><div class="k-chart-title">Flags Over Time</div><div class="chart-canvas-wrap"><canvas id="k-chartTimeline"></canvas></div></div>
+          <div class="k-chart-card"><div class="k-chart-title">Flags by Category</div><div class="chart-canvas-wrap"><canvas id="k-chartCategory"></canvas></div></div>
+          <div class="k-chart-card"><div class="k-chart-title">Pattern Breakdown</div><div class="chart-canvas-wrap"><canvas id="k-chartPatterns"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Backscrape (collapsible) -->
+    <div class="collapsible-wrap" id="k-backscrapeSection">
+      <div class="collapsible-head" onclick="K_toggleSection('k-backscrapeSection')">
+        <span class="collapsible-title">&#128336; Market Backscrape</span>
+        <span class="collapsible-chev">&#8964;</span>
+      </div>
+      <div class="collapsible-body">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          <select class="bs-select" id="k-bsDepth">
+            <option value="50">Depth: 50 markets</option>
+            <option value="200" selected>Depth: 200 markets</option>
+            <option value="500">Depth: 500 markets</option>
+          </select>
+          <select class="bs-select" id="k-bsMinScore">
+            <option value="60" selected>Min Score: 60</option>
+            <option value="70">Min Score: 70</option>
+            <option value="80">Min Score: 80</option>
+            <option value="90">Min Score: 90</option>
+          </select>
+          <select class="bs-select" id="k-bsCategory">
+            <option value="ALL">All Categories</option>
+            <option value="Politics">Politics</option>
+            <option value="Crypto">Crypto</option>
+            <option value="Sports">Sports</option>
+            <option value="Economy">Economy</option>
+            <option value="Tech">Tech</option>
+            <option value="Climate">Climate</option>
+            <option value="Geopolitics">Geopolitics</option>
+            <option value="Other">Other</option>
+          </select>
+          <button class="btn btn-accent" id="k-bsRunBtn" onclick="K_runBackscrape()">&#9654; Run Backscrape</button>
+          <button class="btn btn-sm" id="k-bsStopBtn" onclick="K_stopBackscrape()" style="display:none;">&#9646;&#9646; Stop</button>
+        </div>
+        <div class="bs-progress" id="k-bsProgress" style="display:none;">
+          <span id="k-bsProgressLabel">Scanning...</span>
+          <div class="bs-progress-bar-track"><div class="bs-progress-bar-fill" id="k-bsProgressBar" style="width:0%"></div></div>
+          <span id="k-bsProgressPct">0%</span>
+        </div>
+        <div class="backscrape-table-wrap" id="k-bsTableWrap">
+          <div class="no-results">Run a backscrape to discover historical anomalies.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings (collapsible) -->
+    <div class="collapsible-wrap" id="k-settingsSection">
+      <div class="collapsible-head" onclick="K_toggleSection('k-settingsSection')">
+        <span class="collapsible-title">&#9881; Settings</span>
+        <span class="collapsible-chev">&#8964;</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="settings-grid">
+          <div class="settings-group"><label class="settings-label">Email Alerts</label><input type="email" class="form-input" id="k-settingsEmail" placeholder="your@email.com"></div>
+          <div class="settings-group"><label class="settings-label">Webhook URL</label><input type="url" class="form-input" id="k-settingsWebhook" placeholder="https://..."></div>
+          <div class="settings-group"><label class="settings-label">Score Threshold</label><input type="number" class="form-input" id="k-settingsThreshold" min="60" max="99" value="60"></div>
+          <div class="settings-group">
+            <label class="settings-label">Auto-Refresh Interval</label>
+            <select class="bs-select" id="k-settingsInterval" style="width:100%;">
+              <option value="30">30 seconds</option>
+              <option value="60">60 seconds</option>
+              <option value="120">2 minutes</option>
+              <option value="300">5 minutes</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-note">
+          <strong>API Note:</strong> All Kalshi calls route through the Supabase proxy (<span class="mono" style="font-size:0.65rem;">nigntdyuqxjktmaxttkc.supabase.co/functions/v1/kalshi-proxy</span>) which forwards to <span class="mono" style="font-size:0.65rem;">api.elections.kalshi.com/trade-api/v2</span>.
+        </div>
+      </div>
+    </div>
+
+    <!-- Outcome Log -->
+    <div class="collapsible-wrap" id="k-outcomesSection">
+      <div class="collapsible-head" onclick="K_toggleSection('k-outcomesSection')">
+        <span class="collapsible-title">&#10003; Outcome Log <span style="font-size:0.72rem;font-weight:400;color:var(--text-secondary);" id="k-outcomeBadge">0 resolved</span></span>
+        <span class="collapsible-chev">&#8964;</span>
+      </div>
+      <div class="collapsible-body">
+        <div id="k-outcomeSummaryBar" style="margin-bottom:14px;padding:11px;background:rgba(79,142,247,0.05);border:1px solid rgba(79,142,247,0.15);border-radius:8px;">
+          <span style="color:var(--text-secondary);font-size:0.75rem;">No resolved flags yet</span>
+        </div>
+        <div class="section-label" style="margin-bottom:7px;">Inferred Trader Profiles
+          <span style="font-size:0.63rem;color:var(--text-secondary);font-weight:400;margin-left:5px;">(inferred from series patterns, not real identities)</span>
+        </div>
+        <div id="k-traderProfilesList" style="margin-bottom:14px;">
+          <span style="color:var(--text-secondary);font-size:0.75rem;">Profiles build as flags accumulate across sessions</span>
+        </div>
+        <div class="section-label" style="margin-bottom:7px;">Resolved Flags</div>
+        <div style="overflow-x:auto;">
+          <table class="backscrape-table" id="k-outcomeTable">
+            <thead><tr><th>Market</th><th>Category</th><th>Flagged</th><th>Result</th><th>Score</th><th>Patterns</th><th>&#10003;/&#10007;</th></tr></thead>
+            <tbody id="k-outcomeTableBody"><tr><td colspan="7" style="text-align:center;color:var(--text-secondary);padding:18px;font-size:0.75rem;">No resolved outcomes yet</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tab-kalshi -->
+
+  <!-- Kalshi drill panel -->
+  <div class="k-drill-panel" id="k-drillPanel">
+    <div class="k-drill-header">
+      <div class="k-drill-title" id="k-drillTitle">Market Detail</div>
+      <button class="close-btn" onclick="K_closeDrillPanel()" title="Close">&times;</button>
+    </div>
+    <div class="k-drill-body" id="k-drillBody"></div>
+  </div>
+
+  <!-- Bottom tab bar (mobile) -->
+  <div class="bottom-tab-bar">
+    <button class="bottom-tab-btn active" id="mobile-tab-poly" onclick="switchTab('polymarket')">
+      <span class="bottom-tab-icon">&#128301;</span>
+      Polymarket
+    </button>
+    <button class="bottom-tab-btn" id="mobile-tab-kalshi" onclick="switchTab('kalshi')">
+      <span class="bottom-tab-icon">&#128308;</span>
+      Kalshi
+    </button>
+  </div>
+
+</div><!-- /app-wrap -->
+
+<!-- Polymarket drill panel -->
+<div class="p-drill-backdrop" id="p-drill-backdrop" onclick="P_closeDrillPanel()"></div>
+<div class="p-drill-panel" id="p-drill-panel">
+  <div class="p-drill-panel-header">
+    <div class="p-drill-panel-title" id="p-drill-panel-title">Trade Detail</div>
+    <button class="p-drill-close" onclick="P_closeDrillPanel()">&times;</button>
+  </div>
+  <div id="p-drill-panel-body">
+    <div class="drill-spinner"><div class="spinner-ring"></div> Loading…</div>
+  </div>
+</div>
+
+<!-- Kalshi backscrape scan overlay -->
+<div class="scan-overlay" id="k-scanOverlay">
+  <div class="scan-box">
+    <div class="scan-spinner"></div>
+    <div class="scan-label" id="k-scanLabel">Scanning markets&hellip;</div>
+    <div class="scan-sub" id="k-scanSub">0 / 0 markets</div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Single toast for polymarket (legacy) -->
+<div class="toast" id="p-toast" style="position:fixed;bottom:72px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--bg-elevated);color:var(--text-primary);padding:9px 18px;border-radius:8px;font-size:0.8rem;z-index:2000;transition:transform 300ms ease;pointer-events:none;box-shadow:var(--shadow-lg);border:1px solid var(--border);"></div>
+
+<!-- ============================================================
+     ALL JAVASCRIPT
+     ============================================================ -->
+<script>
+'use strict';
+
+/* ============================================================
+   SHARED UTILITIES
+   ============================================================ */
+
+function showToast(msg, type) {
+  const container = document.getElementById('toastContainer');
+  const div = document.createElement('div');
+  div.className = 'toast ' + (type || '');
+  div.textContent = msg;
+  container.appendChild(div);
+  setTimeout(() => { div.remove(); }, 3000);
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function truncate(str, len) {
+  if (!str) return '';
+  return str.length > len ? str.slice(0, len) + '...' : str;
+}
+
+function fmtNum(n, decimals) {
+  decimals = decimals === undefined ? 2 : decimals;
+  const num = typeof n === 'string' ? parseFloat(n) : n;
+  if (isNaN(num)) return '0';
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 10000) return (num / 1000).toFixed(1) + 'K';
+  if (decimals === 0) return Math.round(num).toLocaleString();
+  return num.toFixed(decimals).replace(/\.?0+$/, '');
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('Copied!'), () => showToast('Copy failed', 'error'));
+}
+
+function toggleCollapsible(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+/* ============================================================
+   TAB CONTROLLER
+   ============================================================ */
+
+let _activeTab = 'polymarket';
+
+function switchTab(tabName) {
+  _activeTab = tabName;
+
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabName));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
+  document.querySelectorAll('.bottom-tab-btn').forEach(b => {
+    const id = b.id.replace('mobile-tab-', '');
+    b.classList.toggle('active', id === tabName);
+  });
+
+  // Update header refresh button target
+  updateLastRefreshDisplay();
+}
+
+function globalRefresh() {
+  const btn = document.getElementById('globalRefreshBtn');
+  btn.classList.add('spinning');
+  setTimeout(() => btn.classList.remove('spinning'), 1500);
+  if (_activeTab === 'polymarket') {
+    P_manualRefresh();
+  } else {
+    K_manualRefresh();
+  }
+}
+
+function updateLastRefreshDisplay() {
+  const el = document.getElementById('globalLastRefresh');
+  if (_activeTab === 'polymarket') {
+    el.textContent = P_lastRefreshTime ? 'poly: ' + P_lastRefreshTime : 'poly: —';
+  } else {
+    el.textContent = K_lastRefreshTime ? 'kalshi: ' + K_lastRefreshTime : 'kalshi: —';
+  }
+}
+
+let P_lastRefreshTime = null;
+let K_lastRefreshTime = null;
+
+/* ============================================================
+   ██████╗  ██████╗ ██╗  ██╗   ██╗███╗   ███╗ █████╗ ██████╗ ██╗  ██╗███████╗████████╗
+   ██╔══██╗██╔═══██╗██║  ╚██╗ ██╔╝████╗ ████║██╔══██╗██╔══██╗██║ ██╔╝██╔════╝╚══██╔══╝
+   ██████╔╝██║   ██║██║   ╚████╔╝ ██╔████╔██║███████║██████╔╝█████╔╝ █████╗     ██║
+   ██╔═══╝ ██║   ██║██║    ╚██╔╝  ██║╚██╔╝██║██╔══██║██╔══██╗██╔═██╗ ██╔══╝     ██║
+   ██║     ╚██████╔╝███████╗██║   ██║ ╚═╝ ██║██║  ██║██║  ██║██║  ██╗███████╗   ██║
+   POLYMARKET ENGINE (namespaced P_)
+   ============================================================ */
+
+const P_SUPABASE_URL      = 'https://nigntdyuqxjktmaxttkc.supabase.co';
+const P_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pZ250ZHl1cXhqa3RtYXh0dGtjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2NDE5NjcsImV4cCI6MjA1OTIxNzk2N30.GvEUwUHFRFuU9Pph0Z7JVmFtT3VDkpVtUEsG9bHb1VU';
+
+const P_PATTERN_DEFS = [
+  { id: 'cal', name: 'Calendar Spread / Decoy Bets', color: '#7c5cbf', tagClass: 'tag-cal',
+    source: 'Temporal evasion via multi-date decoy positions',
+    signals: [
+      { text: 'Decoy-to-target bet ratio', threshold: '≥ 8×' },
+      { text: 'Adjacent date markets', threshold: '≥ 3 dates' },
+      { text: 'Bet size variance decoy vs target', threshold: '> 40%' },
+    ]
+  },
+  { id: 'sybil', name: 'Sybil Splitting', color: '#2a9d8f', tagClass: 'tag-sybil',
+    source: 'Multi-wallet fragmentation to avoid size anomaly',
+    signals: [
+      { text: 'Coordinated wallets detected', threshold: '≥ 4 wallets' },
+      { text: 'Funding delta between wallets', threshold: '< 60 seconds' },
+      { text: 'Bet amount variance across wallets', threshold: '< 2%' },
+    ]
+  },
+  { id: 'dorm', name: 'Dormancy + Resurface', color: '#f59e0b', tagClass: 'tag-dorm',
+    source: 'Aged wallet reactivation to obscure trail',
+    signals: [
+      { text: 'Wallet dormancy period', threshold: '≥ 210 days' },
+      { text: 'Reactivation bet size percentile', threshold: 'Top decile' },
+      { text: 'Time between dormancy end and trade', threshold: '< 2 hours' },
+    ]
+  },
+  { id: 'cat', name: 'Category Concentration', color: '#4a9a6b', tagClass: 'tag-cat-p',
+    source: 'Systematic specialization in insider-accessible verticals',
+    signals: [
+      { text: 'Bets concentrated in single category', threshold: '≥ 80%' },
+      { text: 'Win rate within that category', threshold: '≥ 90%' },
+      { text: 'Markets predicted correctly before catalyst', threshold: '≥ 3 events' },
+    ]
+  },
+  { id: 'user', name: 'Username Rotation', color: '#e07c3a', tagClass: 'tag-user',
+    source: 'Identity cycling between market events',
+    signals: [
+      { text: 'Display name changes detected', threshold: '≥ 2 cycles' },
+      { text: 'Change timing relative to market close', threshold: '< 48 hours' },
+      { text: 'Same proxy wallet across name changes', threshold: 'Confirmed' },
+    ]
+  },
+  { id: 'jit', name: 'Just-in-Time Timing', color: '#c8394b', tagClass: 'tag-jit',
+    source: 'Micro-window entry before resolution events',
+    signals: [
+      { text: 'Entry time before market resolution', threshold: '≤ 6 hours' },
+      { text: 'Recurring JIT behavior', threshold: '≥ 3 occurrences' },
+      { text: 'Price impact at entry', threshold: '> 8%' },
+    ]
+  },
+];
+
+// State
+let P_sessionAlerts = [];
+let P_flaggedWallets = {};
+let P_activeFilter = 'all';
+let P_scanPaused = false;
+let P_countdownSecs = 30;
+let P_countdownTimer = null;
+let P_chartsInitialized = false;
+let P_backscrapeRunning = false;
+let P_bsStopped = false;
+let P_bsAbortController = null;
+let P_patternCounters = { cal:0, sybil:0, dorm:0, cat:0, user:0, jit:0 };
+let P_supabaseClient = null;
+let P_db = null;
+let P_alertEmail = '';
+let P_alertMode = 'immediate';
+let P_alertHistory = [];
+let P_charts = {};
+
+// CORS proxy chain
+const P_CORS_PROXIES = [
+  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://thingproxy.freeboard.io/fetch/${url}`,
+];
+
+async function P_fetchWithProxyFallback(apiUrl, timeout) {
+  timeout = timeout || 6000;
+  for (const proxyFn of P_CORS_PROXIES) {
+    try {
+      const res = await Promise.race([
+        fetch(proxyFn(apiUrl), { headers: { 'Accept': 'application/json' } }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), timeout))
+      ]);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
+        if (data && typeof data === 'object' && !Array.isArray(data)) return data;
+      }
+    } catch(e) { /* try next proxy */ }
+  }
+  return null;
+}
+
+// IndexedDB
+function P_initIndexedDB() {
+  const req = indexedDB.open('polywatch_v3', 3);
+  req.onupgradeneeded = (e) => {
+    const d = e.target.result;
+    if (!d.objectStoreNames.contains('alerts'))   d.createObjectStore('alerts', { keyPath: 'id' });
+    if (!d.objectStoreNames.contains('wallets'))  d.createObjectStore('wallets', { keyPath: 'address' });
+    if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings', { keyPath: 'key' });
+  };
+  req.onsuccess = (e) => {
+    P_db = e.target.result;
+    P_loadAlertsFromDB();
+    P_loadSettings();
+  };
+}
+
+function P_dbPut(store, data) {
+  if (!P_db) return;
+  try { const tx = P_db.transaction(store, 'readwrite'); tx.objectStore(store).put(data); } catch(e) {}
+}
+
+function P_loadAlertsFromDB() {
+  if (!P_db) return;
+  const tx = P_db.transaction('alerts', 'readonly');
+  const req = tx.objectStore('alerts').getAll();
+  req.onsuccess = (e) => {
+    const saved = e.target.result || [];
+    if (saved.length) {
+      saved.forEach(a => { P_sessionAlerts.unshift(a); P_updateWalletData(a); });
+      P_renderAlerts();
+      P_updateStats();
+      P_updateLiveBadge();
+      P_updatePatternCounters();
+    }
+  };
+}
+
+function P_saveAlertToDB(alert) { P_dbPut('alerts', alert); }
+
+function P_loadSettings() {
+  if (!P_db) return;
+  const tx = P_db.transaction('settings', 'readonly');
+  const req = tx.objectStore('settings').getAll();
+  req.onsuccess = (e) => {
+    (e.target.result || []).forEach(s => {
+      if (s.key === 'email' && document.getElementById('p-alert-email')) {
+        P_alertEmail = s.value;
+      }
+    });
+  };
+}
+
+// Supabase
+function P_initSupabase() {
+  try {
+    P_supabaseClient = supabase.createClient(P_SUPABASE_URL, P_SUPABASE_ANON_KEY);
+  } catch(e) {}
+}
+
+// Scoring engine
+function P_scoreTradeGroup(market, trades) {
+  if (!trades || trades.length === 0) return null;
+  const now = Date.now();
+  const endMs = market.endDate ? new Date(market.endDate).getTime() : (now + 30*86400000);
+  const hoursToClose = Math.max(0, (endMs - now) / 3600000);
+  const totalSize = trades.reduce((s,t) => s + (t.size||0), 0);
+  const avgPrice = trades.reduce((s,t) => s + (t.price||0), 0) / trades.length;
+  const liquidity = market.liquidity || 10000;
+
+  const sizePct = totalSize / liquidity;
+  const sizeScore = Math.min(100, Math.round(sizePct * 300));
+
+  const priceDev = Math.abs(avgPrice - 0.5);
+  const impactScore = Math.min(100, Math.round(priceDev * 250));
+
+  const timingScore = hoursToClose < 6 ? Math.min(100, Math.round((6 - hoursToClose) / 6 * 100))
+                    : hoursToClose < 48 ? Math.round(30 - hoursToClose * 0.5)
+                    : 10;
+
+  const walletScore = 50;
+  const historyScore = 40;
+
+  const composite = Math.round(
+    sizeScore * 0.30 + impactScore * 0.25 + timingScore * 0.20 + walletScore * 0.15 + historyScore * 0.10
+  );
+
+  const patternIds = [];
+  if (hoursToClose < 6 && trades.length >= 3) patternIds.push('jit');
+  if (sizePct > 0.1) patternIds.push('cat');
+  const bonus = Math.min(15, patternIds.length * 3);
+  const finalScore = Math.min(99, composite + bonus);
+
+  const layers = [sizeScore, impactScore, timingScore, walletScore, historyScore];
+  const layersOver50 = layers.filter(l => l > 50).length;
+  if (finalScore < 65 || layersOver50 < 3) return null;
+
+  return {
+    id: 'palert_' + market.id + '_' + (trades[0].proxyWallet||'u') + '_' + Date.now(),
+    question: market.question || trades[0].title || 'Unknown market',
+    category: market.category || 'Unknown',
+    wallet: trades[0].proxyWallet,
+    side: (trades[0].outcome || 'YES').toUpperCase(),
+    price: avgPrice,
+    tradeSize: totalSize,
+    netValue: totalSize * avgPrice,
+    score: finalScore,
+    scoreBreakdown: { size: sizeScore, impact: impactScore, timing: timingScore, wallet: walletScore, history: historyScore },
+    patternIds,
+    endDate: market.endDate || null,
+    slug: market.slug || trades[0].eventSlug || '',
+    conditionId: market.conditionId || null,
+    timestamp: (trades[0].timestamp || 0) * 1000 || Date.now(),
+    yesPrice: market.outcomePrices ? parseFloat(market.outcomePrices[0]) : avgPrice,
+  };
+}
+
+async function P_manualRefresh() {
+  if (P_scanPaused) return;
+  P_setRefreshState(true);
+  try {
+    const data = await P_fetchWithProxyFallback('https://data-api.polymarket.com/trades?limit=200', 8000);
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      showToast('No trade data returned — check connection');
+    } else {
+      P_processTradeBatch(data);
+    }
+  } catch(e) {
+    showToast('Feed fetch failed: ' + e.message);
+  }
+  P_setRefreshState(false);
+  P_resetCountdown();
+  P_lastRefreshTime = new Date().toLocaleTimeString();
+  updateLastRefreshDisplay();
+}
+
+function P_setRefreshState(loading) {
+  // Update global refresh icon if poly tab is active
+}
+
+function P_processTradeBatch(trades) {
+  const groups = {};
+  trades.forEach(t => {
+    const key = (t.proxyWallet||'') + '_' + (t.conditionId||'');
+    if (!groups[key]) groups[key] = { conditionId: t.conditionId, trades: [], sample: t };
+    groups[key].trades.push(t);
+  });
+
+  let newAlerts = 0;
+  Object.values(groups).forEach(g => {
+    if (g.trades.length < 1) return;
+    const market = {
+      id: g.conditionId || g.sample.conditionId,
+      conditionId: g.conditionId,
+      question: g.sample.title || 'Unknown',
+      category: P_detectCategory(g.sample.title || ''),
+      endDate: null,
+      outcomePrices: null,
+      volume: 0,
+      liquidity: 50000,
+      slug: g.sample.eventSlug || g.sample.slug || '',
+    };
+    const alert = P_scoreTradeGroup(market, g.trades);
+    if (alert && !P_sessionAlerts.find(a => a.id === alert.id)) {
+      P_sessionAlerts.unshift(alert);
+      P_saveAlertToDB(alert);
+      P_updateWalletData(alert);
+      newAlerts++;
+    }
+  });
+
+  if (newAlerts > 0) {
+    P_renderAlerts();
+    P_updateStats();
+    P_updateLiveBadge();
+    P_updatePatternCounters();
+    showToast(newAlerts + ' new Polymarket flag(s) detected', 'success');
+  }
+}
+
+function P_detectCategory(title) {
+  const t = (title || '').toLowerCase();
+  if (/bitcoin|btc|eth|crypto|coin/.test(t)) return 'Crypto';
+  if (/trump|biden|election|senate|congress|president|vote/.test(t)) return 'Politics';
+  if (/russia|ukraine|iran|war|military|ceasefire|nato/.test(t)) return 'Geopolitics';
+  if (/fed|rate|inflation|gdp|economy|tariff/.test(t)) return 'Economy';
+  if (/nba|nfl|soccer|sports|game|championship/.test(t)) return 'Sports';
+  if (/ai|spacex|nasa|science|tech/.test(t)) return 'Science';
+  return 'Other';
+}
+
+function P_updateWalletData(alert) {
+  const addr = alert.wallet;
+  if (!addr) return;
+  if (!P_flaggedWallets[addr]) {
+    P_flaggedWallets[addr] = {
+      address: addr, flags: [], maxScore: 0, patterns: new Set(),
+      winRate: 0, walletAge: 0, lastActive: alert.timestamp, firstSeen: alert.timestamp,
+    };
+  }
+  const w = P_flaggedWallets[addr];
+  w.flags.push(alert);
+  w.maxScore = Math.max(w.maxScore, alert.score);
+  alert.patternIds.forEach(p => w.patterns.add(p));
+  w.lastActive = Math.max(w.lastActive, alert.timestamp);
+  w.firstSeen = Math.min(w.firstSeen, alert.timestamp);
+}
+
+// Render alerts
+function P_renderAlerts() {
+  const container = document.getElementById('p-alerts-container');
+  const empty = document.getElementById('p-empty-state');
+  let visible = P_sessionAlerts.filter(a => a.score >= 65);
+  if (P_activeFilter !== 'all') {
+    visible = visible.filter(a => a.patternIds.includes(P_activeFilter));
+  }
+  if (visible.length === 0) {
+    empty.style.display = 'flex';
+    const cards = container.querySelectorAll('.alert-card');
+    cards.forEach(c => c.remove());
+    return;
+  }
+  empty.style.display = 'none';
+  const existing = new Set(Array.from(container.querySelectorAll('.alert-card')).map(c => c.dataset.alertId));
+  const frag = document.createDocumentFragment();
+  visible.slice(0, 50).forEach(alert => {
+    if (!existing.has(alert.id)) {
+      frag.appendChild(P_buildAlertCard(alert));
+    }
+  });
+  // Rebuild entirely for simplicity
+  while (container.firstChild && container.firstChild !== empty) container.removeChild(container.firstChild);
+  empty.style.display = 'none';
+  visible.slice(0, 50).forEach(alert => container.appendChild(P_buildAlertCard(alert)));
+}
+
+function P_buildAlertCard(alert) {
+  const el = document.createElement('div');
+  el.className = 'alert-card ' + (alert.score >= 90 ? 'extreme' : 'high');
+  el.dataset.alertId = alert.id;
+
+  const scoreClass = alert.score >= 90 ? 'score-extreme' : 'score-high';
+  const patternsHTML = alert.patternIds.map(pid => {
+    const p = P_PATTERN_DEFS.find(x => x.id===pid);
+    return p ? `<span class="tag ${p.tagClass}">${p.name.split(' ')[0]}</span>` : '';
+  }).join('');
+
+  const timeAgo = P_formatTimeAgo(alert.timestamp);
+  const notional = '$' + Math.round(alert.netValue || 0).toLocaleString() + ' USDC';
+  const searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent((alert.question || '') + ' polymarket');
+
+  el.innerHTML = `
+    <div class="alert-header" onclick="P_toggleAlertCard('${alert.id}')">
+      <div class="alert-score ${scoreClass}">${alert.score}</div>
+      <div class="alert-meta">
+        <div class="alert-market">${escHtml(alert.question)}</div>
+        <div class="alert-tags">
+          <span class="tag tag-cat">${escHtml(alert.category)}</span>
+          <span class="tag ${alert.side === 'YES' ? 'tag-yes' : 'tag-no'}">${alert.side}</span>
+          ${patternsHTML}
+        </div>
+      </div>
+      <div class="alert-right">
+        <span class="alert-time">${timeAgo}</span>
+        <span class="alert-value">${notional}</span>
+        <span class="chevron-alert" id="p-chev-${alert.id}">&#9662;</span>
+      </div>
+    </div>
+    <div class="alert-body" id="p-body-${alert.id}">
+      <div class="alert-score-bars">${P_buildScoreBars(alert)}</div>
+      <div class="alert-actions">
+        <button class="btn btn-accent btn-sm" onclick="P_openDrillDown('${alert.id}','flag')">&#128269; View Bets</button>
+        <a class="search-btn" href="${searchUrl}" target="_blank" rel="noopener">&#128269; Search on Polymarket</a>
+      </div>
+    </div>
+  `;
+  return el;
+}
+
+function P_buildScoreBars(alert) {
+  const layers = [
+    { label: 'Size Abnormality (30%)', val: alert.scoreBreakdown.size },
+    { label: 'Price Impact (25%)',     val: alert.scoreBreakdown.impact },
+    { label: 'Timing to Catalyst (20%)', val: alert.scoreBreakdown.timing },
+    { label: 'Wallet Novelty (15%)',   val: alert.scoreBreakdown.wallet },
+    { label: 'Repeated Edge (10%)',    val: alert.scoreBreakdown.history },
+  ];
+  return layers.map(l => {
+    const fillClass = l.val >= 85 ? 'extreme-fill' : l.val >= 65 ? 'high-fill' : '';
+    return `<div class="alert-score-bar-row">
+      <div class="alert-score-bar-label">${l.label}</div>
+      <div class="alert-score-bar-track"><div class="alert-score-bar-fill ${fillClass}" style="width:${l.val}%"></div></div>
+      <div class="alert-score-bar-val">${l.val}</div>
+    </div>`;
+  }).join('');
+}
+
+function P_toggleAlertCard(id) {
+  const body = document.getElementById('p-body-' + id);
+  const chev = document.getElementById('p-chev-' + id);
+  if (!body) return;
+  body.classList.toggle('open');
+  if (chev) chev.classList.toggle('open');
+}
+
+// Filter pills
+function P_setupFilterPills() {
+  document.querySelectorAll('#p-filter-pills .pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('#p-filter-pills .pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      P_activeFilter = pill.dataset.filter;
+      P_renderAlerts();
+    });
+  });
+}
+
+// Countdown
+function P_startCountdown() {
+  P_countdownTimer = setInterval(() => {
+    if (P_scanPaused) return;
+    P_countdownSecs--;
+    if (P_countdownSecs <= 0) {
+      P_countdownSecs = 30;
+      P_manualRefresh();
+    }
+    document.getElementById('p-countdown').textContent = P_countdownSecs + 's';
+  }, 1000);
+}
+
+function P_resetCountdown() {
+  P_countdownSecs = 30;
+  document.getElementById('p-countdown').textContent = '30s';
+}
+
+function P_togglePause() {
+  P_scanPaused = !P_scanPaused;
+  const btn = document.getElementById('p-pause-btn');
+  btn.textContent = P_scanPaused ? '&#9654; Resume' : '&#9646;&#9646; Pause';
+}
+
+// Stats
+function P_updateStats() {
+  const extreme = P_sessionAlerts.filter(a => a.score >= 90).length;
+  const high    = P_sessionAlerts.filter(a => a.score >= 65 && a.score < 90).length;
+  document.getElementById('p-stat-extreme').textContent = extreme;
+  document.getElementById('p-stat-high').textContent = high;
+  document.getElementById('p-stat-total').textContent = P_sessionAlerts.length;
+}
+
+function P_updateLiveBadge() {
+  const count = P_sessionAlerts.filter(a => a.score >= 65).length;
+  document.getElementById('poly-tab-badge').textContent = count;
+  document.getElementById('mobile-tab-poly').querySelector('.bottom-tab-icon').textContent = count > 0 ? '&#128301;' : '&#128301;';
+}
+
+function P_updatePatternCounters() {
+  P_patternCounters = { cal:0, sybil:0, dorm:0, cat:0, user:0, jit:0 };
+  P_sessionAlerts.forEach(a => {
+    a.patternIds.forEach(pid => { if (P_patternCounters.hasOwnProperty(pid)) P_patternCounters[pid]++; });
+  });
+  P_PATTERN_DEFS.forEach(p => {
+    const el = document.getElementById('p-pattern-counter-' + p.id);
+    if (el) el.textContent = P_patternCounters[p.id];
+    P_renderPatternWallets(p.id);
+  });
+}
+
+// Patterns grid
+function P_renderPatterns() {
+  const grid = document.getElementById('p-patterns-grid');
+  grid.innerHTML = '';
+  P_PATTERN_DEFS.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'pattern-card';
+    card.style.borderLeftColor = p.color;
+    card.innerHTML = `
+      <div class="pattern-header">
+        <div class="pattern-name">${escHtml(p.name)}</div>
+        <div class="pattern-count-num" id="p-pattern-counter-${p.id}" style="color:${p.color}">0</div>
+      </div>
+      <div class="pattern-source">${escHtml(p.source)}</div>
+      <ul class="pattern-signals">
+        ${p.signals.map(s => `<li class="pattern-signal"><span>${escHtml(s.text)}</span><span class="signal-threshold">${escHtml(s.threshold)}</span></li>`).join('')}
+      </ul>
+      <div class="pattern-wallets">
+        <div class="pattern-wallets-label">Wallets firing this pattern</div>
+        <div id="p-pattern-wallets-${p.id}"><span class="pattern-no-wallets">None yet</span></div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function P_renderPatternWallets(patternId) {
+  const el = document.getElementById('p-pattern-wallets-' + patternId);
+  if (!el) return;
+  const wallets = Object.values(P_flaggedWallets).filter(w => w.patterns.has(patternId));
+  if (!wallets.length) { el.innerHTML = '<span class="pattern-no-wallets">None yet</span>'; return; }
+  el.innerHTML = wallets.slice(0,6).map(w =>
+    `<span class="pattern-wallet-link" onclick="P_openDrillDown('${w.address}','wallet')">${P_truncateWallet(w.address)}</span>`
+  ).join('');
+}
+
+// Backscrape
+function P_startBackscrape() {
+  if (P_backscrapeRunning) return;
+  P_backscrapeRunning = true;
+  P_bsStopped = false;
+  P_bsAbortController = new AbortController();
+  document.getElementById('p-bs-start-btn').disabled = true;
+  document.getElementById('p-bs-stop-btn').disabled = false;
+  document.getElementById('p-bs-status-text').textContent = 'Running…';
+  document.getElementById('p-bs-progress').style.width = '0%';
+  document.getElementById('p-bs-results-body').innerHTML = '';
+  document.getElementById('p-bs-result-count').textContent = '0 markets scanned';
+  const log = document.getElementById('p-bs-log');
+  log.textContent = '';
+
+  const depth    = parseInt(document.getElementById('p-bs-depth').value) || 200;
+  const minScore = parseInt(document.getElementById('p-bs-min-score').value) || 75;
+  const category = document.getElementById('p-bs-category').value;
+
+  function appendLog(msg) { log.textContent += msg + '\n'; log.scrollTop = log.scrollHeight; }
+  appendLog('[' + P_ts() + '] Fetching real markets from gamma-api (depth=' + depth + ')…');
+  P_runRealBackscrape(depth, minScore, category, appendLog);
+}
+
+async function P_runRealBackscrape(depth, minScore, category, appendLog) {
+  const pageSize = 100;
+  let offset = 0, processed = 0;
+  const total = Math.min(depth, 500);
+
+  while (!P_bsStopped && processed < total) {
+    const limit = Math.min(pageSize, total - processed);
+    const marketApiUrl = 'https://gamma-api.polymarket.com/markets?closed=false&limit=' + limit + '&offset=' + offset;
+    appendLog('[' + P_ts() + '] Fetching markets offset=' + offset + '…');
+    let markets = null;
+    try { markets = await P_fetchWithProxyFallback(marketApiUrl, 10000); } catch(e) {}
+
+    if (!markets || !Array.isArray(markets) || markets.length === 0) {
+      appendLog('[' + P_ts() + '] No more markets returned at offset=' + offset);
+      break;
+    }
+
+    for (let i = 0; i < markets.length && !P_bsStopped; i++) {
+      const m = markets[i];
+      processed++;
+      const pct = Math.round((processed / total) * 100);
+      document.getElementById('p-bs-progress').style.width = pct + '%';
+      document.getElementById('p-bs-result-count').textContent = processed + ' markets scanned';
+
+      if (category !== 'all') {
+        const detectedCat = P_detectCategory(m.question || '');
+        if (detectedCat.toLowerCase() !== category.toLowerCase()) continue;
+      }
+
+      const conditionId = m.conditionId || m.id;
+      if (!conditionId) continue;
+
+      const tradesUrl = 'https://data-api.polymarket.com/trades?market=' + conditionId + '&limit=100';
+      let trades = null;
+      try { trades = await P_fetchWithProxyFallback(tradesUrl, 8000); } catch(e) {}
+      if (!trades || !Array.isArray(trades) || trades.length === 0) continue;
+
+      const byWallet = {};
+      trades.forEach(t => {
+        const w = t.proxyWallet;
+        if (!w) return;
+        if (!byWallet[w]) byWallet[w] = [];
+        byWallet[w].push(t);
+      });
+
+      const market = {
+        id: m.id || conditionId, conditionId,
+        question: m.question || m.title || 'Unknown',
+        category: P_detectCategory(m.question || ''),
+        endDate: m.endDate || m.endDateIso || null,
+        outcomePrices: m.outcomePrices || null,
+        volume: m.volume || 0,
+        liquidity: m.liquidity || m.volumeNum || 50000,
+        slug: m.slug || '',
+      };
+
+      const marketFlags = [];
+      Object.values(byWallet).forEach(walletTrades => {
+        const alert = P_scoreTradeGroup(market, walletTrades);
+        if (alert && alert.score >= minScore) {
+          marketFlags.push(alert);
+          P_sessionAlerts.unshift(alert);
+          P_saveAlertToDB(alert);
+          P_updateWalletData(alert);
+        }
+      });
+
+      if (marketFlags.length > 0) {
+        const topScore = Math.max(...marketFlags.map(a => a.score));
+        appendLog('[' + P_ts() + '] \u26a0 ' + marketFlags.length + ' flag(s) in: ' + (market.question||'').substring(0,50) + '…');
+        P_renderBsSingleRow({ q: market.question, cat: market.category, trades: trades.length, numFlags: marketFlags.length, topScore, flags: marketFlags });
+        P_renderAlerts(); P_updateStats(); P_updateLiveBadge(); P_updatePatternCounters();
+      } else if (processed % 10 === 0) {
+        appendLog('[' + P_ts() + '] Scanned ' + processed + '/' + total + ' — no flags');
+      }
+      await new Promise(r => setTimeout(r, 300));
+    }
+
+    offset += markets.length;
+    if (markets.length < pageSize) break;
+  }
+  P_finishScrape(processed);
+}
+
+function P_renderBsSingleRow(row) {
+  const tbody = document.getElementById('p-bs-results-body');
+  const tr = document.createElement('tr');
+  const scoreClass = row.topScore >= 90 ? 'score-extreme-label' : 'score-high-label';
+  tr.innerHTML = `
+    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(row.q)}">${escHtml((row.q||'').substring(0,50))}${(row.q||'').length>50?'…':''}</td>
+    <td>${escHtml(row.cat)}</td>
+    <td class="mono">${row.trades}</td>
+    <td class="mono">${row.numFlags}</td>
+    <td class="mono ${scoreClass}">${row.topScore}</td>
+    <td><button class="btn btn-sm" onclick="P_showBsFlags(this)" data-flags='${escHtml(JSON.stringify(row.flags.map(f=>f.id)))}'>View</button></td>
+  `;
+  tbody.insertBefore(tr, tbody.firstChild);
+}
+
+function P_showBsFlags(btn) {
+  const flagIds = JSON.parse(btn.dataset.flags);
+  const flags = flagIds.map(id => P_sessionAlerts.find(a=>a.id===id)).filter(Boolean);
+  if (!flags.length) { showToast('No flag data found'); return; }
+  P_openDrillDown(flags[0].id, 'flag');
+}
+
+function P_stopBackscrape() {
+  P_bsStopped = true;
+  if (P_bsAbortController) P_bsAbortController.abort();
+  P_finishScrape(0);
+}
+
+function P_finishScrape(processed) {
+  P_backscrapeRunning = false;
+  document.getElementById('p-bs-start-btn').disabled = false;
+  document.getElementById('p-bs-stop-btn').disabled = true;
+  document.getElementById('p-bs-status-text').textContent = P_bsStopped ? 'Stopped' : 'Complete';
+}
+
+function P_ts() {
+  return new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+// Wallet watch
+function P_renderWalletTable() {
+  const tbody = document.getElementById('p-wallet-table-body');
+  const wallets = Object.values(P_flaggedWallets);
+  if (!wallets.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);padding:20px;font-size:0.75rem;">No flagged wallets yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '';
+  wallets.sort((a,b) => b.maxScore - a.maxScore).forEach(w => {
+    const tr = document.createElement('tr');
+    tr.className = 'wallet-row';
+    tr.onclick = () => P_openDrillDown(w.address, 'wallet');
+    const patterns = Array.from(w.patterns).map(pid => {
+      const p = P_PATTERN_DEFS.find(x=>x.id===pid);
+      return p ? `<span class="tag ${p.tagClass}">${p.id.toUpperCase()}</span>` : '';
+    }).join('');
+    const scoreClass = w.maxScore >= 90 ? 'score-extreme-label' : 'score-high-label';
+    tr.innerHTML = `
+      <td class="wallet-address-cell">${P_truncateWallet(w.address)}</td>
+      <td class="mono">${w.flags.length}</td>
+      <td class="mono ${scoreClass}">${w.maxScore}</td>
+      <td class="mono">${Math.round(w.winRate*100)}%</td>
+      <td>${patterns}</td>
+      <td class="mono" style="font-size:0.7rem;">${P_formatTimeAgo(w.lastActive)}</td>
+      <td><button class="btn btn-accent btn-xs" onclick="event.stopPropagation();P_openDrillDown('${w.address}','wallet')">View</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function P_exportWalletCSV() {
+  const wallets = Object.values(P_flaggedWallets);
+  if (!wallets.length) { showToast('No wallet data to export'); return; }
+  const headers = ['Wallet','Flags','MaxScore','WinRate','Patterns','LastActive'];
+  const rows = wallets.map(w => [w.address, w.flags.length, w.maxScore, Math.round(w.winRate*100)+'%', Array.from(w.patterns).join(';'), new Date(w.lastActive).toISOString()]);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'polywatch_wallets_' + Date.now() + '.csv'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exported');
+}
+
+// Drill-down panel
+let P_currentDrillType = null;
+let P_currentDrillId = null;
+
+function P_openDrillDown(id, type) {
+  P_currentDrillId = id;
+  P_currentDrillType = type;
+  const panel = document.getElementById('p-drill-panel');
+  const backdrop = document.getElementById('p-drill-backdrop');
+  const title = document.getElementById('p-drill-panel-title');
+  const body = document.getElementById('p-drill-panel-body');
+  body.innerHTML = '<div class="drill-spinner"><div class="spinner-ring"></div> Loading trade data…</div>';
+
+  if (type === 'flag') {
+    const alert = P_sessionAlerts.find(a => a.id === id);
+    if (!alert) { showToast('Alert not found'); return; }
+    title.textContent = alert.question;
+    P_loadFlagDrillDown(alert, body);
+  } else if (type === 'wallet') {
+    const wallet = P_flaggedWallets[id];
+    if (!wallet) { showToast('Wallet not found'); return; }
+    title.textContent = 'Wallet ' + P_truncateWallet(id);
+    P_loadWalletDrillDown(wallet, body);
+  }
+
+  panel.classList.add('open');
+  backdrop.classList.add('open');
+}
+
+function P_closeDrillPanel() {
+  document.getElementById('p-drill-panel').classList.remove('open');
+  document.getElementById('p-drill-backdrop').classList.remove('open');
+}
+
+async function P_loadFlagDrillDown(alert, bodyEl) {
+  let trades = null, source = 'unavailable';
+  const cacheKey = 'p_trades_' + (alert.conditionId||'') + '_' + (alert.wallet||'');
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached) { try { trades = JSON.parse(cached); source = 'cached'; } catch(e) {} }
+
+  if (!trades && alert.conditionId) {
+    const walletUrl = alert.wallet
+      ? 'https://data-api.polymarket.com/trades?market=' + alert.conditionId + '&user=' + alert.wallet + '&limit=50'
+      : null;
+    const marketUrl = 'https://data-api.polymarket.com/trades?market=' + alert.conditionId + '&limit=100';
+    if (walletUrl) {
+      const data = await P_fetchWithProxyFallback(walletUrl);
+      if (data && data.length > 0) { trades = data; source = 'live'; }
+    }
+    if (!trades) {
+      const data = await P_fetchWithProxyFallback(marketUrl);
+      if (data && data.length > 0) {
+        const wt = alert.wallet ? data.filter(t => t.proxyWallet === alert.wallet) : [];
+        trades = wt.length > 0 ? wt : data.slice(0, 10);
+        source = 'live';
+      }
+    }
+    if (trades) sessionStorage.setItem(cacheKey, JSON.stringify(trades));
+  }
+
+  if (!trades || trades.length === 0) { trades = []; source = 'unavailable'; }
+  P_renderFlagDrillPanel(alert, trades, source, bodyEl);
+}
+
+function P_renderFlagDrillPanel(alert, trades, source, bodyEl) {
+  const totalNotional = trades.reduce((sum, t) => sum + ((t.size||0) * (t.price||0)), 0);
+  const endDateStr = alert.endDate ? P_formatDateHuman(new Date(alert.endDate)) : 'Unknown';
+  const yesPrice = alert.yesPrice ? Math.round(alert.yesPrice * 100) + '%' : (Math.round((alert.price||0) * 100) + '%');
+  const sourceLabel = source === 'live' ? '&#x1F7E2; Live' : source === 'cached' ? '&#x1F535; Cached' : '&#x26AA; No data';
+  const latestTrade = trades[0];
+  const emulateOutcome = latestTrade ? (latestTrade.outcome || 'Yes') : (alert.side || 'Yes');
+  const emulatePrice = latestTrade ? Math.round((latestTrade.price||alert.price||0.5)*100) : Math.round((alert.price||0.5)*100);
+  const emulateSize = latestTrade ? Math.round(latestTrade.size||0) : Math.round(alert.netValue||0);
+  const searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent((alert.question || '') + ' polymarket');
+
+  bodyEl.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div class="p-drill-section-label">Trade History</div>
+      <span style="font-size:0.63rem;font-family:var(--font-mono);color:var(--text-secondary);">${sourceLabel}</span>
+    </div>
+    <div id="p-drill-trades-list">
+      ${trades.map(t => P_renderBetRow(t, alert)).join('')}
+    </div>
+    <div class="drill-total-row">
+      <span>Total notional</span>
+      <span class="drill-total-val">$${Math.round(totalNotional).toLocaleString()} USDC</span>
+    </div>
+    <hr class="panel-divider">
+    <div class="p-drill-section-label" style="margin-bottom:7px;">Emulate This Bet</div>
+    <div style="background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:11px;margin-bottom:11px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:9px;">
+        <div style="text-align:center;">
+          <div style="font-size:0.63rem;color:var(--text-secondary);margin-bottom:2px;">Direction</div>
+          <div style="font-family:var(--font-mono);font-size:0.88rem;font-weight:600;color:${emulateOutcome.toLowerCase()==='yes'?'var(--accent-green)':'var(--accent-red)'};">${emulateOutcome.toUpperCase()}</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:0.63rem;color:var(--text-secondary);margin-bottom:2px;">Price</div>
+          <div style="font-family:var(--font-mono);font-size:0.88rem;font-weight:600;color:var(--text-primary);">${emulatePrice}&cent;</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:0.63rem;color:var(--text-secondary);margin-bottom:2px;">Size</div>
+          <div style="font-family:var(--font-mono);font-size:0.88rem;font-weight:600;color:var(--text-primary);">${emulateSize.toLocaleString()} sh</div>
+        </div>
+      </div>
+      <a href="${searchUrl}" target="_blank" rel="noreferrer noopener"
+         class="search-btn" style="width:100%;justify-content:center;display:flex;text-decoration:none;">
+        &#128269; Search on Polymarket
+      </a>
+    </div>
+    <hr class="panel-divider">
+    <div class="drill-wallet-info">
+      <div class="drill-wallet-row">
+        <span class="drill-wallet-key">Wallet</span>
+        <span class="drill-wallet-val" onclick="P_copyToClipboard('${alert.wallet||''}')">${P_truncateWallet(alert.wallet)}</span>
+      </div>
+      <div class="drill-copy-hint">Click address to copy full</div>
+      <div class="drill-wallet-row" style="margin-top:6px;">
+        <span class="drill-wallet-key">Market closes</span>
+        <span class="drill-wallet-val" style="cursor:default;">${endDateStr}</span>
+      </div>
+      <div class="drill-wallet-row">
+        <span class="drill-wallet-key">Current YES price</span>
+        <span class="drill-wallet-val" style="cursor:default;">${yesPrice}</span>
+      </div>
+      <div class="drill-wallet-row">
+        <span class="drill-wallet-key">Anomaly score</span>
+        <span class="drill-wallet-val" style="cursor:default;color:${alert.score>=90?'var(--accent-red)':'var(--accent-amber)'};">${alert.score}</span>
+      </div>
+    </div>
+  `;
+}
+
+function P_renderBetRow(t, alert) {
+  const outcome = t.outcome || 'Unknown';
+  const side = t.side || 'BUY';
+  const size = Math.round(t.size || 1000);
+  const price = t.price || 0.6;
+  const notional = Math.round(size * price);
+  const timeAgo = t.timestamp ? P_formatTimeAgo(t.timestamp * (t.timestamp < 10000000000 ? 1000 : 1)) : 'recently';
+  const txHash = t.transactionHash || null;
+  const slug = t.eventSlug || t.slug || (alert ? alert.slug : '');
+  const isYes = outcome.toLowerCase() === 'yes';
+  const priceDisplay = Math.round(price * 100);
+
+  return `
+    <div class="bet-row ${isYes ? 'yes' : 'no'}">
+      <div class="bet-row-top">
+        <span class="outcome-badge ${isYes ? 'outcome-yes' : 'outcome-no'}">${outcome.toUpperCase()}</span>
+        <span style="font-family:var(--font-mono);font-size:0.63rem;color:var(--text-secondary);">${side}</span>
+        <span style="font-size:0.63rem;color:var(--text-secondary);margin-left:auto;">${timeAgo}</span>
+      </div>
+      <div class="bet-meta">
+        <span><span class="bet-meta-val">${size.toLocaleString()}</span> shares</span>
+        <span>@<span class="bet-meta-val">${priceDisplay}&cent;</span></span>
+        <span>= <span class="bet-meta-val">$${notional.toLocaleString()} USDC</span></span>
+      </div>
+      <div class="bet-links">
+        ${txHash ? `<a href="https://polygonscan.com/tx/${escHtml(txHash)}" target="_blank" rel="noreferrer noopener" class="bet-link">&#128279; On-chain TX</a>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+async function P_loadWalletDrillDown(wallet, bodyEl) {
+  const flags = wallet.flags;
+  const totalNotional = flags.reduce((s,a) => s+a.netValue, 0);
+  const scores = flags.map(a=>a.score);
+  const minScore = Math.min(...scores);
+  const maxScore = Math.max(...scores);
+  const firstSeen = P_formatDateHuman(new Date(wallet.firstSeen));
+  const lastSeen = P_formatDateHuman(new Date(wallet.lastActive));
+  const patternIds = Array.from(wallet.patterns);
+  const patternsHtml = patternIds.map(pid => {
+    const p = P_PATTERN_DEFS.find(x=>x.id===pid);
+    return p ? `<span class="drill-pattern-pill">${p.name}</span>` : '';
+  }).join('');
+
+  bodyEl.innerHTML = `
+    <div class="drill-wallet-stats">
+      <div class="drill-stat-card"><div class="drill-stat-label">Total Flags</div><div class="drill-stat-val">${flags.length}</div></div>
+      <div class="drill-stat-card"><div class="drill-stat-label">Score Range</div><div class="drill-stat-val">${minScore}&ndash;${maxScore}</div></div>
+      <div class="drill-stat-card"><div class="drill-stat-label">First Seen</div><div class="drill-stat-val" style="font-size:0.8rem;">${firstSeen}</div></div>
+      <div class="drill-stat-card"><div class="drill-stat-label">Last Active</div><div class="drill-stat-val" style="font-size:0.8rem;">${lastSeen}</div></div>
+    </div>
+    <div class="p-drill-section-label">Patterns Detected</div>
+    <div class="drill-pattern-pills">${patternsHtml || '<span style="color:var(--text-secondary);font-size:0.75rem;">None</span>'}</div>
+    <div class="drill-wallet-info">
+      <div class="drill-wallet-row">
+        <span class="drill-wallet-key">Wallet Address</span>
+        <span class="drill-wallet-val" onclick="P_copyToClipboard('${wallet.address}')">${P_truncateWallet(wallet.address)}</span>
+      </div>
+      <div class="drill-copy-hint">Click to copy full address</div>
+      <div class="drill-wallet-row" style="margin-top:7px;">
+        <span class="drill-wallet-key">Total Notional</span>
+        <span class="drill-wallet-val" style="cursor:default;">$${Math.round(totalNotional).toLocaleString()} USDC</span>
+      </div>
+      <div class="drill-wallet-row">
+        <span class="drill-wallet-key">Max Score</span>
+        <span class="drill-wallet-val" style="cursor:default;color:${wallet.maxScore>=90?'var(--accent-red)':'var(--accent-amber)'};">${wallet.maxScore}</span>
+      </div>
+    </div>
+    <hr class="panel-divider">
+    <div class="p-drill-section-label">Recent Flags</div>
+    ${flags.slice(0,5).map(a => `
+      <div style="background:rgba(255,255,255,0.03);border-radius:7px;padding:9px;margin-bottom:6px;border-left:2px solid ${a.score>=90?'var(--accent-red)':'var(--accent-amber)'};">
+        <div style="font-size:0.78rem;font-weight:500;color:var(--text-primary);margin-bottom:3px;">${escHtml(a.question)}</div>
+        <div style="display:flex;gap:10px;font-size:0.68rem;font-family:var(--font-mono);color:var(--text-secondary);">
+          <span>Score: <span style="color:${a.score>=90?'var(--accent-red)':'var(--accent-amber)'};">${a.score}</span></span>
+          <span>${a.side}</span>
+          <span>$${Math.round(a.netValue||0).toLocaleString()}</span>
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function P_toggleMarketGroup(groupId) {
+  const el = document.getElementById(groupId);
+  const chev = document.getElementById(groupId + '-chev');
+  if (el) el.classList.toggle('open');
+  if (chev) chev.classList.toggle('open');
+}
+
+// Helpers
+function P_truncateWallet(addr) {
+  if (!addr || addr.length < 14) return addr || '—';
+  return addr.slice(0, 8) + '…' + addr.slice(-6);
+}
+
+function P_copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('Copied: ' + P_truncateWallet(text)));
+}
+
+function P_formatTimeAgo(ts) {
+  const diffMs = Date.now() - ts;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffSec < 60) return diffSec + 's ago';
+  if (diffMin < 60) return diffMin + 'm ago';
+  if (diffHr < 24) return diffHr + 'h ' + (diffMin%60) + 'm ago';
+  return Math.floor(diffHr/24) + 'd ago';
+}
+
+function P_formatDateHuman(d) {
+  if (!(d instanceof Date) || isNaN(d)) return 'Unknown';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function P_showPolyToast(msg) {
+  const t = document.getElementById('p-toast');
+  t.textContent = msg;
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  setTimeout(() => { t.style.transform = 'translateX(-50%) translateY(60px)'; }, 2500);
+}
+
+// Init
+function P_init() {
+  P_initIndexedDB();
+  P_initSupabase();
+  P_renderPatterns();
+  P_setupFilterPills();
+  P_startCountdown();
+  showToast('Polymarket engine ready — click Refresh to scan');
+  setTimeout(P_manualRefresh, 1200);
+}
+
+/* ============================================================
+   ██╗  ██╗ █████╗ ██╗     ███████╗██╗  ██╗██╗
+   ██║ ██╔╝██╔══██╗██║     ██╔════╝██║  ██║██║
+   █████╔╝ ███████║██║     ███████╗███████║██║
+   ██╔═██╗ ██╔══██║██║     ╚════██║██╔══██║██║
+   ██║  ██╗██║  ██║███████╗███████║██║  ██║██║
+   KALSHI ENGINE (namespaced K_)
+   ============================================================ */
+
+const K_KALSHI_BASE = 'https://api.elections.kalshi.com/trade-api/v2';
+const K_PROXY_BASE  = 'https://nigntdyuqxjktmaxttkc.supabase.co/functions/v1/kalshi-proxy';
+const K_BASE_URL    = K_KALSHI_BASE;
+
+const K_PATTERN_DEFS = [
+  { id: 'jit',   name: 'Pre-Close Surge',   color: '#ef4444', desc: 'Concentrated activity within 6h of close — potential informed positioning.' },
+  { id: 'whale', name: 'Whale Block',        color: '#f59e0b', desc: 'Single trade dominates the batch — one large counterparty absorbing liquidity.' },
+  { id: 'pi',    name: 'Price Dislocation',  color: '#22c55e', desc: 'Significant price deviation from midpoint paired with elevated volume.' },
+  { id: 'obi',   name: 'Book Imbalance',     color: '#4f8ef7', desc: 'Orderbook depth heavily skewed toward taker direction.' },
+  { id: 'sweep', name: 'Pre-Close Sweep',    color: '#f59e0b', desc: 'Large single-trade execution within 1h of close — conviction or informed exit.' },
+];
+
+const K_MARKET_CATEGORIES = ['Politics','Crypto','Sports','Economy','Tech','Climate','Geopolitics','Other'];
+
+const K_DB_NAME      = 'kalshiwatch_v1';
+const K_DB_VERSION   = 2;
+const K_STORE_FLAGS   = 'flags';
+const K_STORE_OUTCOMES= 'outcomes';
+const K_STORE_MKTCACHE= 'mktcache';
+const K_STORE_TRADERS = 'traders';
+
+const K_SERIES_LABELS = {
+  'KXCS2GAME':'CS2 Match','KXCS2SERIES':'CS2 Series','KXLOLGAME':'LoL Match','KXDOTA2GAME':'Dota2 Match',
+  'KXMLBGAME':'MLB Game','KXMLBTOTAL':'MLB Total Runs','KXMLBSPREAD':'MLB Run Line','KXMLBPTS':'MLB Player Props',
+  'KXNBAGAME':'NBA Game','KXNBAPTS':'NBA Player Points','KXNBAREB':'NBA Player Rebounds','KXNBAAST':'NBA Player Assists',
+  'KXNBA3PT':'NBA Player 3-Pointers','KXNBASPREAD':'NBA Spread','KXNBATOTAL':'NBA Total Points','KXWNBAGAME':'WNBA Game',
+  'KXNHLGAME':'NHL Game','KXNHLTOTAL':'NHL Total Goals',
+  'KXNFLGAME':'NFL Game','KXNFLSPREAD':'NFL Spread','KXNFLTOTAL':'NFL Total Points',
+  'KXSOCGAME':'Soccer Match','KXMLSGAME':'MLS Match','KXWTAMATCH':'WTA Match','KXATPMATCH':'ATP Match',
+  'KXBTC15M':'BTC Price (15min)','KXBTC1H':'BTC Price (1hr)','KXBTCD':'BTC Price (Daily)','KXBTC':'BTC Price',
+  'KXETHD':'ETH Price (Daily)','KXETH':'ETH Price','KXSOLD':'SOL Price (Daily)','KXSOL':'SOL Price',
+  'KXPRESNOMR':'Republican Primary','KXPRESNOMD':'Democratic Primary','KXPRES':'Presidential Race',
+  'KXSENATE':'Senate Race','KXHOUSE':'House Race','KXGOV':'Governor Race',
+  'KXFED':'Fed Rate Decision','KXCPI':'CPI Report','KXJOBS':'Jobs Report','KXGDP':'GDP Report',
+  'KXMVESPORTSMULTIGAMEEXTENDED':'Multi-Game Parlay','KXMVESPORTSMULTIGAME':'Multi-Game Parlay',
+  'KXMVENBA':'NBA Multi-Market','KXMVEMLB':'MLB Multi-Market',
+};
+
+// State
+let K_sessionFlags = [];
+let K_marketsScanned = 0;
+let K_activeFilter = 'ALL';
+let K_scoreThreshold = 60;
+let K_contractsThreshold = 1;
+let K_scanPaused = false;
+let K_sessionStart = Date.now();
+let K_countdownVal = 30;
+let K_countdownTimer = null;
+let K_refreshInterval = 30;
+let K_chartsInitialized = false;
+let K_chartTimeline = null;
+let K_chartCategory = null;
+let K_chartPatterns = null;
+let K_db = null;
+let K_selectedFlagId = null;
+let K_bsStopped = false;
+let K_marketCacheL1 = {};
+let K_traderProfiles = {};
+let K_outcomeSummary = { total: 0, correct: 0, byCategory: {}, byPattern: {} };
+
+function K_buildProxyUrl(kalshiUrl) {
+  const u = new URL(kalshiUrl);
+  const path = u.pathname.replace('/trade-api/v2', '');
+  const params = new URLSearchParams(u.search);
+  params.set('path', path);
+  return K_PROXY_BASE + '?' + params.toString();
+}
+
+async function K_fetchWithProxyFallback(apiUrl, timeout) {
+  timeout = timeout || 8000;
+  const proxyUrl = K_buildProxyUrl(apiUrl);
+  try {
+    const res = await Promise.race([
+      fetch(proxyUrl, { headers: { 'Accept': 'application/json' } }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), timeout))
+    ]);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data === 'object') return data;
+    }
+    console.warn('[KalshiEngine] Proxy returned', res.status, proxyUrl);
+  } catch(e) {
+    console.warn('[KalshiEngine] Proxy fetch error:', e.message);
+  }
+  return null;
+}
+
+function K_decodeTicker(ticker) {
+  if (!ticker) return ticker;
+  const parts = ticker.split('-');
+  const series = parts[0];
+  const label = K_SERIES_LABELS[series];
+  const suffix = parts[parts.length - 1];
+  const middleRaw = parts.length >= 3 ? parts[1] : '';
+  const teams = middleRaw.length > 11 ? middleRaw.slice(11) : '';
+  if (label) return teams ? label + ': ' + suffix + ' (' + teams + ')' : label + ': ' + suffix;
+  return series + ': ' + suffix;
+}
+
+function K_detectCategory(title) {
+  const t = (title || '').toLowerCase();
+  if (/bitcoin|btc|eth|crypto|coin|sol|doge/.test(t)) return 'Crypto';
+  if (/trump|biden|election|senate|congress|president|vote|poll/.test(t)) return 'Politics';
+  if (/russia|ukraine|iran|war|military|ceasefire|nato|china/.test(t)) return 'Geopolitics';
+  if (/fed|rate|inflation|gdp|economy|tariff|recession|jobs/.test(t)) return 'Economy';
+  if (/nba|nfl|nhl|mlb|soccer|sports|game|championship|score|runs/.test(t)) return 'Sports';
+  if (/temperature|hurricane|tornado|earthquake|storm/.test(t)) return 'Climate';
+  if (/ai|spacex|nasa|tech|ipo|merger/.test(t)) return 'Tech';
+  return 'Other';
+}
+
+// Two-level market cache
+async function K_getMarketFromCache(ticker) {
+  if (K_marketCacheL1[ticker]) return K_marketCacheL1[ticker];
+  if (!K_db) return null;
+  return new Promise(resolve => {
+    try {
+      const tx = K_db.transaction(K_STORE_MKTCACHE, 'readonly');
+      const req = tx.objectStore(K_STORE_MKTCACHE).get(ticker);
+      req.onsuccess = () => {
+        const row = req.result;
+        if (row && (Date.now() - row.cachedAt) < 3600000) {
+          K_marketCacheL1[ticker] = row.market;
+          resolve(row.market);
+        } else resolve(null);
+      };
+      req.onerror = () => resolve(null);
+    } catch(e) { resolve(null); }
+  });
+}
+
+function K_putMarketInCache(ticker, market) {
+  K_marketCacheL1[ticker] = market;
+  if (!K_db) return;
+  try {
+    const tx = K_db.transaction(K_STORE_MKTCACHE, 'readwrite');
+    tx.objectStore(K_STORE_MKTCACHE).put({ ticker, market, cachedAt: Date.now() });
+  } catch(e) {}
+}
+
+async function K_loadMarketCacheFromDB() {
+  if (!K_db) return;
+  return new Promise(resolve => {
+    try {
+      const tx = K_db.transaction(K_STORE_MKTCACHE, 'readonly');
+      const req = tx.objectStore(K_STORE_MKTCACHE).getAll();
+      req.onsuccess = () => {
+        const now = Date.now();
+        (req.result || []).forEach(row => {
+          if ((now - row.cachedAt) < 3600000) K_marketCacheL1[row.ticker] = row.market;
+        });
+        resolve();
+      };
+      req.onerror = () => resolve();
+    } catch(e) { resolve(); }
+  });
+}
+
+// Scoring engine
+async function K_scoreMarketTrades(market, trades) {
+  if (!trades || trades.length < 2) return null;
+  const now = Date.now();
+  const closeMs = market.close_time ? new Date(market.close_time).getTime() : (now + 30 * 86400000);
+  const hoursToClose = Math.max(0, (closeMs - now) / 3600000);
+
+  const counts    = trades.map(t => parseFloat(t.count_fp) || 0);
+  const yesPrices = trades.map(t => parseFloat(t.yes_price_dollars) || 0);
+  const totalContracts = counts.reduce((a, b) => a + b, 0);
+  const avgYesPrice    = yesPrices.reduce((a, b) => a + b, 0) / yesPrices.length;
+  const maxSingleTrade = Math.max(...counts);
+  const openInterest   = parseFloat(market.open_interest_fp) || 1;
+  const yesTrades      = trades.filter(t => t.taker_side === 'yes').length;
+  const uniformity     = Math.abs(yesTrades / trades.length - 0.5) * 2;
+
+  const volumeRatio  = totalContracts / Math.max(openInterest, 1);
+  const volumeScore  = Math.min(100, Math.round(volumeRatio * 200));
+  const dominance    = maxSingleTrade / Math.max(totalContracts, 1);
+  const dominanceScore = Math.min(100, Math.round(dominance * 120));
+  const priceDev     = Math.abs(avgYesPrice - 0.5);
+  const priceScore   = Math.min(100, Math.round(priceDev * 300));
+  const timingScore  = hoursToClose < 6
+    ? Math.min(100, Math.round((6 - hoursToClose) / 6 * 100))
+    : hoursToClose < 48 ? Math.max(0, Math.round(35 - hoursToClose * 0.5)) : 8;
+  const uniformityScore = Math.min(100, Math.round(uniformity * 100));
+
+  let obImbalanceScore = 0, obImbalance = 0;
+  try {
+    const obCacheKey = 'ob_' + market.ticker;
+    let obData = null;
+    const obCached = sessionStorage.getItem(obCacheKey);
+    if (obCached) { const parsed = JSON.parse(obCached); if (Date.now() - parsed.ts < 120000) obData = parsed.data; }
+    if (!obData) {
+      const obUrl = K_BASE_URL + '/markets/' + market.ticker + '/orderbook';
+      const raw = await K_fetchWithProxyFallback(obUrl, 4000);
+      if (raw && raw.orderbook_fp) { obData = raw.orderbook_fp; sessionStorage.setItem(obCacheKey, JSON.stringify({ ts: Date.now(), data: obData })); }
+    }
+    if (obData) {
+      const yesDepth = (obData.yes_dollars || []).reduce((s, [, c]) => s + parseFloat(c||0), 0);
+      const noDepth  = (obData.no_dollars  || []).reduce((s, [, c]) => s + parseFloat(c||0), 0);
+      const total = yesDepth + noDepth;
+      if (total > 0) {
+        obImbalance = yesDepth / total;
+        const dominantYes = yesTrades >= trades.length / 2;
+        const obAgreement = dominantYes ? obImbalance : (1 - obImbalance);
+        obImbalanceScore = obAgreement > 0.6 ? Math.min(100, Math.round((obAgreement - 0.5) * 200)) : 0;
+      }
+    }
+  } catch(e) {}
+
+  const layers = [volumeScore, dominanceScore, priceScore, timingScore, uniformityScore, obImbalanceScore];
+  const composite = Math.round(
+    volumeScore * 0.28 + dominanceScore * 0.18 + priceScore * 0.23 +
+    timingScore * 0.13 + uniformityScore * 0.10 + obImbalanceScore * 0.08
+  );
+
+  const patternIds = [];
+  if (hoursToClose < 6 && uniformity > 0.7) patternIds.push('jit');
+  if (dominance > 0.5) patternIds.push('whale');
+  if (priceDev > 0.2 && volumeRatio > 0.05) patternIds.push('pi');
+  if (obImbalanceScore > 60) patternIds.push('obi');
+  if (hoursToClose < 1 && dominance > 0.4) patternIds.push('sweep');
+  const bonus = Math.min(12, patternIds.length * 4);
+  const finalScore = Math.min(99, composite + bonus);
+
+  const cat = (market.category || K_detectCategory(market.title || '')).toLowerCase();
+  let gate = 65;
+  if (['crypto', 'economy'].includes(cat)) gate = 70;
+  if (['politics', 'geopolitics'].includes(cat)) gate = 63;
+  if (['sports'].includes(cat)) gate = 65;
+  if (['climate', 'other'].includes(cat)) gate = 72;
+
+  const layersOver40 = layers.filter(l => l > 40).length;
+  if (finalScore < gate || layersOver40 < 3) return null;
+
+  const dominantSide = yesTrades >= trades.length / 2 ? 'YES' : 'NO';
+  const sidePrice = dominantSide === 'YES' ? Math.round(avgYesPrice * 100) : Math.round((1 - avgYesPrice) * 100);
+
+  return {
+    id: 'kflag_' + market.ticker + '_' + Date.now(),
+    ticker: market.ticker,
+    eventTicker: market.event_ticker || '',
+    title: market.title || K_decodeTicker(market.ticker),
+    category: market.category || K_detectCategory(market.title || market.ticker || ''),
+    side: dominantSide,
+    sidePrice,
+    avgYesPrice,
+    totalContracts,
+    maxSingleTrade,
+    liquidity: parseFloat(market.liquidity_dollars) || 0,
+    openInterest,
+    obImbalance: Math.round(obImbalance * 100),
+    score: finalScore,
+    gate,
+    scoreBreakdown: {
+      volume: volumeScore, dominance: dominanceScore, price: priceScore,
+      timing: timingScore, uniformity: uniformityScore, orderbook: obImbalanceScore
+    },
+    patternIds,
+    closeTime: market.close_time || null,
+    hoursToClose,
+    tradeCount: trades.length,
+    volume24h: parseFloat(market.volume_24h_fp) || 0,
+    trades: trades.slice(0, 20),
+    timestamp: Date.now(),
+    outcome: null,
+  };
+}
+
+async function K_manualRefresh() {
+  if (K_scanPaused) { showToast('Auto-refresh is paused'); return; }
+  K_setRefreshState(true);
+  try {
+    const apiUrl = K_BASE_URL + '/markets/trades?limit=200';
+    const data = await K_fetchWithProxyFallback(apiUrl);
+    if (!data || !data.trades || !data.trades.length) {
+      showToast('No trade data returned from Kalshi API', 'error');
+      K_setRefreshState(false);
+      return;
+    }
+    await K_processTradeBatch(data.trades);
+  } catch(e) {
+    showToast('Kalshi feed error: ' + e.message, 'error');
+  }
+  K_setRefreshState(false);
+  K_resetCountdown();
+  K_lastRefreshTime = new Date().toLocaleTimeString();
+  updateLastRefreshDisplay();
+}
+
+async function K_processTradeBatch(trades) {
+  const byTicker = {};
+  trades.forEach(t => {
+    if (!byTicker[t.ticker]) byTicker[t.ticker] = [];
+    byTicker[t.ticker].push(t);
+  });
+
+  const unknownTickers = [];
+  for (const tk of Object.keys(byTicker)) {
+    const cached = await K_getMarketFromCache(tk);
+    if (!cached) unknownTickers.push(tk);
+    else K_marketsScanned++;
+  }
+
+  const chunks = [];
+  for (let i = 0; i < unknownTickers.length; i += 5) chunks.push(unknownTickers.slice(i, i + 5));
+  for (const chunk of chunks) {
+    await Promise.all(chunk.map(async tk => {
+      try {
+        const url = K_BASE_URL + '/markets/' + tk;
+        const data = await K_fetchWithProxyFallback(url, 5000);
+        if (data && data.market) { K_putMarketInCache(tk, data.market); K_marketsScanned++; }
+      } catch(e) {}
+    }));
+  }
+
+  let newFlags = 0;
+  for (const [ticker, tkTrades] of Object.entries(byTicker)) {
+    const market = (await K_getMarketFromCache(ticker)) || { ticker, title: K_decodeTicker(ticker), event_ticker: ticker };
+    const flag = await K_scoreMarketTrades(market, tkTrades);
+    if (flag) {
+      const existing = K_sessionFlags.find(f => f.ticker === ticker && (Date.now() - f.timestamp) < 3600000);
+      if (!existing) {
+        K_sessionFlags.unshift(flag);
+        K_saveFlag(flag);
+        K_updateTraderProfiles(flag);
+        newFlags++;
+      }
+    }
+  }
+
+  if (newFlags > 0) {
+    K_renderFlags();
+    K_updateStats();
+    K_updatePatternCounters();
+    if (K_chartsInitialized) K_updateCharts();
+    showToast(newFlags + ' new Kalshi flag(s) detected', 'success');
+  } else {
+    K_updateStats();
+  }
+}
+
+function K_setRefreshState(loading) {
+  const btn = document.getElementById('k-refreshBtn');
+  const spinner = document.getElementById('k-refreshSpinner');
+  if (btn) {
+    btn.disabled = loading;
+    btn.textContent = loading ? 'Scanning...' : '↻ Refresh';
+  }
+}
+
+function K_startCountdown() {
+  clearInterval(K_countdownTimer);
+  K_countdownVal = K_refreshInterval;
+  K_updateCountdownDisplay();
+  K_countdownTimer = setInterval(() => {
+    if (K_scanPaused) return;
+    K_countdownVal--;
+    if (K_countdownVal <= 0) { K_countdownVal = K_refreshInterval; K_manualRefresh(); }
+    K_updateCountdownDisplay();
+  }, 1000);
+}
+
+function K_resetCountdown() {
+  K_countdownVal = K_refreshInterval;
+  K_updateCountdownDisplay();
+}
+
+function K_updateCountdownDisplay() {
+  const el = document.getElementById('k-countdown');
+  if (el) el.textContent = K_countdownVal + 's';
+}
+
+function K_togglePause() {
+  K_scanPaused = !K_scanPaused;
+  const btn = document.getElementById('k-pauseBtn');
+  if (btn) {
+    btn.textContent = K_scanPaused ? '▶ Resume' : '⏸ Pause';
+    btn.style.color = K_scanPaused ? 'var(--accent-amber)' : '';
+  }
+  showToast(K_scanPaused ? 'Kalshi auto-refresh paused' : 'Kalshi auto-refresh resumed');
+}
+
+function K_startSessionTimer() {
+  setInterval(() => {
+    const elapsed = Math.floor((Date.now() - K_sessionStart) / 1000);
+    const m = Math.floor(elapsed / 60);
+    const s = elapsed % 60;
+    const el = document.getElementById('k-statTime');
+    if (el) el.textContent = m + ':' + String(s).padStart(2, '0');
+  }, 1000);
+}
+
+function K_updateStats() {
+  const fe = document.getElementById('k-statFlags');
+  const se = document.getElementById('k-statScanned');
+  if (fe) fe.textContent = K_sessionFlags.length;
+  if (se) se.textContent = K_marketsScanned;
+  document.getElementById('kalshi-tab-badge').textContent = K_getFilteredFlags().length;
+}
+
+function K_updatePatternCounters() {
+  const counts = { jit: 0, whale: 0, pi: 0, obi: 0, sweep: 0 };
+  K_sessionFlags.forEach(f => { (f.patternIds || []).forEach(pid => { if (counts[pid] !== undefined) counts[pid]++; }); });
+  const ids = ['jit','whale','pi','obi','sweep'];
+  ids.forEach(id => {
+    const el = document.getElementById('k-pn-' + id);
+    if (el) el.textContent = counts[id];
+  });
+}
+
+function K_setCat(cat) {
+  K_activeFilter = cat;
+  document.querySelectorAll('#k-catPills .pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.cat === cat);
+  });
+  K_renderFlags();
+}
+
+function K_onSliderChange() {
+  K_scoreThreshold = parseInt(document.getElementById('k-scoreSlider').value);
+  K_contractsThreshold = parseInt(document.getElementById('k-contractsSlider').value);
+  document.getElementById('k-scoreSliderVal').textContent = K_scoreThreshold;
+  document.getElementById('k-contractsSliderVal').textContent = K_contractsThreshold;
+  K_renderFlags();
+}
+
+function K_getFilteredFlags() {
+  return K_sessionFlags.filter(f => {
+    if (K_activeFilter !== 'ALL' && f.category !== K_activeFilter) return false;
+    if (f.score < K_scoreThreshold) return false;
+    if (f.totalContracts < K_contractsThreshold) return false;
+    return true;
+  });
+}
+
+function K_getScoreClass(score) {
+  if (score >= 80) return 'score-amber';
+  if (score >= 65) return 'score-green';
+  return 'score-muted';
+}
+
+function K_getTierClass(score) {
+  if (score >= 80) return 'tier-amber';
+  if (score >= 70) return 'tier-green';
+  return 'tier-blue';
+}
+
+function K_renderFlags() {
+  const grid = document.getElementById('k-flagGrid');
+  const filtered = K_getFilteredFlags();
+  const badge = document.getElementById('k-flagCountBadge');
+  if (badge) badge.textContent = filtered.length;
+  document.getElementById('kalshi-tab-badge').textContent = filtered.length;
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <svg width="42" height="42" viewBox="0 0 42 42" fill="none"><circle cx="21" cy="21" r="18" stroke="#2a3347" stroke-width="2"/><path d="M21 12v10M21 26v4" stroke="#2a3347" stroke-width="2.5" stroke-linecap="round"/></svg>
+        <p>${K_sessionFlags.length === 0 ? 'No anomaly flags yet' : 'No flags match filters'}</p>
+        <span class="hint">${K_sessionFlags.length === 0 ? 'Click Refresh to scan the Kalshi trade feed.' : 'Try lowering the score threshold or changing the category filter.'}</span>
+      </div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map(flag => K_renderFlagCard(flag)).join('');
+}
+
+function K_renderPatternChips(patternIds) {
+  if (!patternIds || !patternIds.length) return '';
+  return patternIds.map(pid => {
+    const def = K_PATTERN_DEFS.find(d => d.id === pid);
+    return `<span class="chip chip-pattern ${pid}" title="${def ? def.desc : ''}">${def ? def.name : pid}</span>`;
+  }).join('');
+}
+
+function K_formatTimeAgo(ts) {
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 60) return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  return Math.floor(diff / 3600) + 'h ago';
+}
+
+function K_formatHoursToClose(h) {
+  if (h < 0.1) return '< 6m';
+  if (h < 1) return Math.round(h * 60) + 'm';
+  if (h < 48) return h.toFixed(1) + 'h';
+  return Math.floor(h / 24) + 'd';
+}
+
+function K_renderFlagCard(flag) {
+  const tierClass = K_getTierClass(flag.score);
+  const scoreClass = K_getScoreClass(flag.score);
+  const isSelected = flag.id === K_selectedFlagId;
+  const searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent((flag.title || '') + ' kalshi');
+
+  return `
+    <div class="flag-card ${tierClass}${isSelected ? ' selected' : ''}" onclick="K_openDrillPanel('${flag.id}')" style="cursor:pointer;">
+      <div class="card-top">
+        <div class="card-title-block">
+          <div class="card-title" title="${escHtml(flag.title)}">${escHtml(truncate(flag.title, 70))}</div>
+          <div class="card-chips">
+            <span class="chip chip-cat">${escHtml(flag.category)}</span>
+            <span class="chip ${flag.side === 'YES' ? 'chip-yes' : 'chip-no'}">${flag.side} @ ${flag.sidePrice}&cent;</span>
+            ${K_renderPatternChips(flag.patternIds)}
+          </div>
+        </div>
+        <div class="score-badge ${scoreClass}">${flag.score}</div>
+      </div>
+      <div class="card-metrics">
+        <div class="metric-item">
+          <span class="metric-label">Volume</span>
+          <span class="metric-val">${fmtNum(flag.totalContracts)}</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Avg Price</span>
+          <span class="metric-val">${Math.round(flag.avgYesPrice * 100)}&cent;</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Trades</span>
+          <span class="metric-val">${flag.tradeCount}</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="card-time">${K_formatTimeAgo(flag.timestamp)} &middot; closes ${K_formatHoursToClose(flag.hoursToClose)}</span>
+        <a class="search-btn" href="${searchUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">&#128269; Search on Kalshi</a>
+      </div>
+    </div>`;
+}
+
+// Drill panel
+function K_openDrillPanel(flagId) {
+  const flag = K_sessionFlags.find(f => f.id === flagId);
+  if (!flag) return;
+  K_selectedFlagId = flagId;
+  document.querySelectorAll('#k-flagGrid .flag-card').forEach(c => {
+    c.classList.toggle('selected', c.querySelector('[data-flag-id]')?.dataset.flagId === flagId);
+  });
+  const panel = document.getElementById('k-drillPanel');
+  document.getElementById('k-drillTitle').textContent = truncate(flag.title, 50);
+  document.getElementById('k-drillBody').innerHTML = '<div class="drill-spinner"><div class="spinner-ring"></div> Loading…</div>';
+  panel.classList.add('open');
+  K_loadTradeDrillDown(flag, document.getElementById('k-drillBody'));
+}
+
+function K_closeDrillPanel() {
+  document.getElementById('k-drillPanel').classList.remove('open');
+  K_selectedFlagId = null;
+  document.querySelectorAll('#k-flagGrid .flag-card').forEach(c => c.classList.remove('selected'));
+}
+
+async function K_loadTradeDrillDown(flag, bodyEl) {
+  let trades = flag.trades || [];
+  let source = 'session';
+
+  const cacheKey = 'kt_' + flag.ticker;
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached) {
+    try { trades = JSON.parse(cached); source = 'cached'; } catch(e) {}
+  } else {
+    const url = K_BASE_URL + '/markets/trades?ticker=' + encodeURIComponent(flag.ticker) + '&limit=50';
+    const data = await K_fetchWithProxyFallback(url, 7000);
+    if (data && data.trades && data.trades.length > 0) {
+      trades = data.trades;
+      source = 'live';
+      sessionStorage.setItem(cacheKey, JSON.stringify(trades));
+    }
+  }
+  K_renderTradeDrillPanel(flag, trades, source, bodyEl);
+}
+
+function K_renderTradeDrillPanel(flag, trades, source, bodyEl) {
+  const isLive = source === 'live';
+  const closeStr = flag.closeTime ? new Date(flag.closeTime).toLocaleString() : 'Unknown';
+  const searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent((flag.title || '') + ' Kalshi');
+
+  bodyEl.innerHTML = `
+    <div class="drill-section">
+      <div class="drill-section-title">Anomaly Score &mdash; ${flag.score}</div>
+      <div class="score-bars">
+        ${K_buildScoreBar('Volume',        flag.scoreBreakdown ? flag.scoreBreakdown.volume : 0)}
+        ${K_buildScoreBar('Dominance',     flag.scoreBreakdown ? flag.scoreBreakdown.dominance : 0)}
+        ${K_buildScoreBar('Price Dev',     flag.scoreBreakdown ? flag.scoreBreakdown.price : 0)}
+        ${K_buildScoreBar('Book Imbalance',flag.scoreBreakdown ? (flag.scoreBreakdown.orderbook || 0) : 0)}
+        ${K_buildScoreBar('Timing',        flag.scoreBreakdown ? flag.scoreBreakdown.timing : 0)}
+        ${K_buildScoreBar('Uniformity',    flag.scoreBreakdown ? flag.scoreBreakdown.uniformity : 0)}
+      </div>
+      ${flag.patternIds && flag.patternIds.length ? `
+      <div style="margin-top:10px;display:flex;gap:5px;flex-wrap:wrap;">
+        ${K_renderPatternChips(flag.patternIds)}
+      </div>` : ''}
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="drill-section">
+      <div class="drill-section-title">Emulate This Bet</div>
+      <div class="emulate-box">
+        <div class="emulate-row">
+          <span class="emulate-label">Direction</span>
+          <span class="emulate-val ${flag.side === 'YES' ? 'color-green' : 'color-red'}">${flag.side}</span>
+        </div>
+        <div class="emulate-row">
+          <span class="emulate-label">Price</span>
+          <span class="emulate-val">${flag.sidePrice}&cent;</span>
+        </div>
+        <div class="emulate-row">
+          <span class="emulate-label">Contracts (batch)</span>
+          <span class="emulate-val">${fmtNum(flag.totalContracts)}</span>
+        </div>
+        <div class="emulate-row">
+          <span class="emulate-label">Avg YES Price</span>
+          <span class="emulate-val">${Math.round(flag.avgYesPrice * 100)}&cent;</span>
+        </div>
+        <a class="search-btn" href="${searchUrl}" target="_blank" rel="noopener">&#128269; Search on Kalshi &rarr;</a>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="drill-section">
+      <div class="drill-section-title">
+        <div class="live-dot ${isLive ? '' : 'grey'}"></div>
+        Trade History
+        <span style="color:var(--text-secondary);font-size:0.66rem;font-weight:400;">${isLive ? 'live data' : source === 'cached' ? 'cached' : 'session data'}</span>
+      </div>
+      ${trades.length > 0 ? `
+      <div style="overflow-x:auto;">
+        <table class="trade-table">
+          <thead>
+            <tr>
+              <th>Count</th>
+              <th>Side</th>
+              <th>YES Price</th>
+              <th>Time</th>
+              <th>Trade ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${trades.slice(0, 30).map(t => K_renderTradeRow(t)).join('')}
+          </tbody>
+        </table>
+      </div>` : `<div class="no-results">No trade data available.</div>`}
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="drill-section">
+      <div class="drill-section-title">Market Info</div>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-item-label">Ticker</span>
+          <span class="info-item-val mono" onclick="copyText('${escHtml(flag.ticker)}')" title="Click to copy" style="cursor:pointer;">${escHtml(flag.ticker)}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-item-label">Category</span>
+          <span class="info-item-val">${escHtml(flag.category)}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-item-label">Closes</span>
+          <span class="info-item-val">${closeStr}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-item-label">Hours to Close</span>
+          <span class="info-item-val">${K_formatHoursToClose(flag.hoursToClose)}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-item-label">Open Interest</span>
+          <span class="info-item-val">${fmtNum(flag.openInterest)}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-item-label">24h Volume</span>
+          <span class="info-item-val">${fmtNum(flag.volume24h || 0)}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-item-label">Liquidity</span>
+          <span class="info-item-val">$${fmtNum(flag.liquidity, 0)}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-item-label">Trade Count</span>
+          <span class="info-item-val">${flag.tradeCount}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-item-label">Book Depth</span>
+          <span class="info-item-val">${flag.obImbalance !== undefined ? flag.obImbalance + '% YES' : '&mdash;'}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function K_buildScoreBar(label, val) {
+  const color = val >= 70 ? 'var(--accent-amber)' : val >= 45 ? 'var(--accent-green)' : 'var(--accent)';
+  return `
+    <div class="score-row">
+      <span class="score-row-label">${label}</span>
+      <div class="score-bar-track">
+        <div class="score-bar-fill" style="width:${val}%;background:${color};"></div>
+      </div>
+      <span class="score-row-num">${val}</span>
+    </div>`;
+}
+
+function K_renderTradeRow(t) {
+  const count = parseFloat(t.count_fp) || 0;
+  const yesPrice = parseFloat(t.yes_price_dollars) || 0;
+  const side = (t.taker_side || '').toUpperCase();
+  const timeAgo = t.created_time ? K_formatTradeTimeAgo(t.created_time) : '&mdash;';
+  const tradeId = (t.trade_id || '').substring(0, 12);
+  return `<tr>
+    <td>${fmtNum(count)}</td>
+    <td><span class="chip ${side === 'YES' ? 'chip-yes' : 'chip-no'}" style="font-size:0.65rem;padding:1px 5px;">${side}</span></td>
+    <td>${Math.round(yesPrice * 100)}&cent;</td>
+    <td>${timeAgo}</td>
+    <td style="font-family:var(--font-mono);font-size:0.7rem;cursor:pointer;" title="${escHtml(t.trade_id || '')}" onclick="copyText('${escHtml(t.trade_id || '')}')">${escHtml(tradeId)}&hellip;</td>
+  </tr>`;
+}
+
+function K_formatTradeTimeAgo(isoStr) {
+  try {
+    const diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
+    if (diff < 60) return diff + 's ago';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+  } catch(e) { return '&mdash;'; }
+}
+
+/* ============================================================
+   KALSHI BACKSCRAPE
+   ============================================================ */
+
+async function K_runBackscrape() {
+  K_bsStopped = false;
+  const depth = parseInt(document.getElementById('k-bsDepth').value);
+  const minScore = parseInt(document.getElementById('k-bsMinScore').value);
+  const category = document.getElementById('k-bsCategory').value;
+
+  document.getElementById('k-bsRunBtn').disabled = true;
+  document.getElementById('k-bsStopBtn').style.display = 'inline-flex';
+  document.getElementById('k-bsProgress').style.display = 'flex';
+  document.getElementById('k-bsTableWrap').innerHTML = '<div class="no-results">Fetching open markets&hellip;</div>';
+
+  const results = [];
+  let markets = [];
+  let cursor = null;
+
+  while (markets.length < depth && !K_bsStopped) {
+    const url = K_BASE_URL + '/markets?status=open&limit=100' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '');
+    const data = await K_fetchWithProxyFallback(url, 8000);
+    if (!data || !data.markets || !data.markets.length) break;
+    markets = markets.concat(data.markets);
+    cursor = data.cursor;
+    if (!cursor) break;
+    if (markets.length >= depth) { markets = markets.slice(0, depth); break; }
+  }
+
+  if (markets.length === 0) {
+    showToast('Could not fetch market list', 'error');
+    K_bsFinish();
+    return;
+  }
+
+  const total = markets.length;
+  let done = 0;
+  K_setBsProgress(0, total);
+  document.getElementById('k-bsTableWrap').innerHTML = '<div class="no-results">Analyzing ' + total + ' markets&hellip;</div>';
+
+  for (const market of markets) {
+    if (K_bsStopped) break;
+    try {
+      const cat = market.category || K_detectCategory(market.title || '');
+      if (category !== 'ALL' && cat !== category) { done++; K_setBsProgress(done, total); continue; }
+      const url = K_BASE_URL + '/markets/trades?ticker=' + encodeURIComponent(market.ticker) + '&limit=100';
+      const data = await K_fetchWithProxyFallback(url, 5000);
+      if (data && data.trades && data.trades.length >= 2) {
+        const enrichedMarket = Object.assign({}, market, { category: cat });
+        const flag = await K_scoreMarketTrades(enrichedMarket, data.trades);
+        if (flag && flag.score >= minScore) {
+          results.push(flag);
+          results.sort((a, b) => b.score - a.score);
+          K_renderBsTable(results);
+        }
+      }
+    } catch(e) {}
+    done++;
+    K_setBsProgress(done, total);
+  }
+
+  showToast('Backscrape complete: ' + results.length + ' flags found', results.length > 0 ? 'success' : '');
+  K_bsFinish();
+}
+
+function K_stopBackscrape() {
+  K_bsStopped = true;
+  K_bsFinish();
+  showToast('Backscrape stopped');
+}
+
+function K_bsFinish() {
+  const run = document.getElementById('k-bsRunBtn');
+  const stop = document.getElementById('k-bsStopBtn');
+  if (run) run.disabled = false;
+  if (stop) stop.style.display = 'none';
+}
+
+function K_setBsProgress(done, total) {
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+  const bar = document.getElementById('k-bsProgressBar');
+  const pctEl = document.getElementById('k-bsProgressPct');
+  const label = document.getElementById('k-bsProgressLabel');
+  if (bar) bar.style.width = pct + '%';
+  if (pctEl) pctEl.textContent = pct + '%';
+  if (label) label.textContent = done + ' / ' + total + ' markets scanned';
+}
+
+function K_renderBsTable(results) {
+  if (results.length === 0) {
+    document.getElementById('k-bsTableWrap').innerHTML = '<div class="no-results">No flags found yet.</div>';
+    return;
+  }
+  const html = `
+    <table class="trade-table">
+      <thead>
+        <tr>
+          <th>Ticker</th><th>Title</th><th>Category</th><th>Score</th>
+          <th>Side</th><th>Price</th><th>Contracts</th><th>Patterns</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${results.map(flag => `
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:0.7rem;">${escHtml(flag.ticker)}</td>
+            <td title="${escHtml(flag.title)}">${escHtml(truncate(flag.title, 40))}</td>
+            <td>${escHtml(flag.category)}</td>
+            <td><span class="${K_getScoreClass(flag.score)}" style="font-family:var(--font-mono);font-weight:600;">${flag.score}</span></td>
+            <td><span class="chip ${flag.side === 'YES' ? 'chip-yes' : 'chip-no'}">${flag.side}</span></td>
+            <td style="font-family:var(--font-mono);">${flag.sidePrice}&cent;</td>
+            <td style="font-family:var(--font-mono);">${fmtNum(flag.totalContracts)}</td>
+            <td>${K_renderPatternChips(flag.patternIds || [])}</td>
+            <td><button class="btn-sm" onclick="K_importBsFlag(${JSON.stringify(JSON.stringify(flag))})">View</button></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+  document.getElementById('k-bsTableWrap').innerHTML = html;
+}
+
+function K_importBsFlag(flagJson) {
+  try {
+    const flag = JSON.parse(flagJson);
+    const exists = K_sessionFlags.find(f => f.ticker === flag.ticker);
+    if (!exists) {
+      K_sessionFlags.unshift(flag);
+      K_saveFlag(flag);
+      K_renderFlags();
+      K_updateStats();
+      K_updatePatternCounters();
+    }
+    K_openDrillPanel(flag.id || (K_sessionFlags.find(f => f.ticker === flag.ticker) || {}).id);
+  } catch(e) { showToast('Could not import flag', 'error'); }
+}
+
+/* ============================================================
+   KALSHI CHARTS
+   ============================================================ */
+
+function K_initCharts() {
+  if (K_chartsInitialized) return;
+
+  Chart.defaults.color = 'var(--text-secondary)';
+  Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+  Chart.defaults.font.size = 11;
+
+  const gridColor = 'rgba(42,51,71,0.8)';
+  const baseOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { color: '#8892a4' } },
+      y: { grid: { color: gridColor }, ticks: { color: '#8892a4' }, beginAtZero: true }
+    }
+  };
+
+  const timeLabels = [];
+  const now = new Date();
+  for (let i = 11; i >= 0; i--) {
+    const h = new Date(now.getTime() - i * 3600000);
+    timeLabels.push(h.getHours() + ':00');
+  }
+
+  const timelineEl = document.getElementById('k-chartTimeline');
+  if (timelineEl) {
+    K_chartTimeline = new Chart(timelineEl.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: timeLabels,
+        datasets: [{
+          label: 'Flags',
+          data: new Array(12).fill(0),
+          borderColor: '#4f8ef7',
+          backgroundColor: 'rgba(79,142,247,0.12)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3,
+          pointBackgroundColor: '#4f8ef7',
+        }]
+      },
+      options: Object.assign({}, baseOpts)
+    });
+  }
+
+  const categoryEl = document.getElementById('k-chartCategory');
+  if (categoryEl) {
+    K_chartCategory = new Chart(categoryEl.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: K_MARKET_CATEGORIES,
+        datasets: [{
+          label: 'Flags',
+          data: new Array(K_MARKET_CATEGORIES.length).fill(0),
+          backgroundColor: ['rgba(79,142,247,0.7)','rgba(245,158,11,0.7)','rgba(34,197,94,0.7)','rgba(239,68,68,0.7)','rgba(79,142,247,0.5)','rgba(34,197,94,0.5)','rgba(245,158,11,0.5)','rgba(136,146,164,0.5)'],
+          borderColor: 'transparent',
+          borderRadius: 4,
+        }]
+      },
+      options: Object.assign({}, baseOpts)
+    });
+  }
+
+  const patternsEl = document.getElementById('k-chartPatterns');
+  if (patternsEl) {
+    K_chartPatterns = new Chart(patternsEl.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: K_PATTERN_DEFS.map(d => d.name),
+        datasets: [{
+          data: K_PATTERN_DEFS.map(() => 0),
+          backgroundColor: K_PATTERN_DEFS.map(d => d.color + 'cc'),
+          borderColor: K_PATTERN_DEFS.map(d => d.color),
+          borderWidth: 1,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '60%',
+        plugins: { legend: { display: true, position: 'bottom', labels: { color: '#8892a4', boxWidth: 10, font: { size: 10 } } } }
+      }
+    });
+  }
+
+  K_chartsInitialized = true;
+}
+
+function K_updateCharts() {
+  if (!K_chartsInitialized) return;
+  const now = Date.now();
+  const buckets = new Array(12).fill(0);
+  K_sessionFlags.forEach(f => {
+    const hrIdx = Math.floor((now - f.timestamp) / 3600000);
+    if (hrIdx >= 0 && hrIdx < 12) buckets[11 - hrIdx]++;
+  });
+  if (K_chartTimeline) { K_chartTimeline.data.datasets[0].data = buckets; K_chartTimeline.update('none'); }
+  const catCounts = {};
+  K_MARKET_CATEGORIES.forEach(c => catCounts[c] = 0);
+  K_sessionFlags.forEach(f => { if (catCounts[f.category] !== undefined) catCounts[f.category]++; });
+  if (K_chartCategory) { K_chartCategory.data.datasets[0].data = K_MARKET_CATEGORIES.map(c => catCounts[c]); K_chartCategory.update('none'); }
+  const patCounts = { jit: 0, whale: 0, pi: 0, obi: 0, sweep: 0 };
+  K_sessionFlags.forEach(f => (f.patternIds || []).forEach(pid => { if (patCounts[pid] !== undefined) patCounts[pid]++; }));
+  if (K_chartPatterns) { K_chartPatterns.data.datasets[0].data = K_PATTERN_DEFS.map(d => patCounts[d.id] || 0); K_chartPatterns.update('none'); }
+}
+
+function K_toggleSection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('expanded');
+  if (id === 'k-chartSection' && el.classList.contains('expanded') && !K_chartsInitialized) {
+    setTimeout(K_initCharts, 50);
+  }
+}
+
+/* ============================================================
+   KALSHI INDEXEDDB
+   ============================================================ */
+
+function K_initDB() {
+  const req = indexedDB.open(K_DB_NAME, K_DB_VERSION);
+  req.onupgradeneeded = (e) => {
+    const database = e.target.result;
+    if (!database.objectStoreNames.contains(K_STORE_FLAGS)) {
+      database.createObjectStore(K_STORE_FLAGS, { keyPath: 'id' });
+    }
+    if (!database.objectStoreNames.contains(K_STORE_OUTCOMES)) {
+      const os = database.createObjectStore(K_STORE_OUTCOMES, { keyPath: 'flagId' });
+      os.createIndex('ticker', 'ticker', { unique: false });
+      os.createIndex('category', 'category', { unique: false });
+      os.createIndex('resolvedAt', 'resolvedAt', { unique: false });
+    }
+    if (!database.objectStoreNames.contains(K_STORE_MKTCACHE)) {
+      const os = database.createObjectStore(K_STORE_MKTCACHE, { keyPath: 'ticker' });
+      os.createIndex('cachedAt', 'cachedAt', { unique: false });
+    }
+    if (!database.objectStoreNames.contains(K_STORE_TRADERS)) {
+      database.createObjectStore(K_STORE_TRADERS, { keyPath: 'profileId' });
+    }
+  };
+  req.onsuccess = (e) => {
+    K_db = e.target.result;
+    const dot = document.getElementById('k-dbDot');
+    if (dot) dot.classList.add('ok');
+    K_loadMarketCacheFromDB()
+      .then(() => K_loadStoredFlagsAsync())
+      .then(() => K_loadOutcomeSummary())
+      .then(() => K_loadTraderProfiles())
+      .then(() => K_checkAndLogOutcomes());
+  };
+  req.onerror = () => {
+    const dot = document.getElementById('k-dbDot');
+    if (dot) dot.classList.add('error');
+    showToast('Kalshi IndexedDB unavailable', 'error');
+  };
+}
+
+function K_saveFlag(flag) {
+  if (!K_db) return;
+  try {
+    const tx = K_db.transaction(K_STORE_FLAGS, 'readwrite');
+    tx.objectStore(K_STORE_FLAGS).put(flag);
+  } catch(e) {}
+}
+
+function K_loadStoredFlagsAsync() {
+  if (!K_db) return Promise.resolve();
+  return new Promise(resolve => {
+    try {
+      const tx = K_db.transaction(K_STORE_FLAGS, 'readonly');
+      const req = tx.objectStore(K_STORE_FLAGS).getAll();
+      req.onsuccess = async () => {
+        const stored = (req.result || []).filter(f => (Date.now() - f.timestamp) < 24 * 3600 * 1000);
+        stored.forEach(f => {
+          if (!K_sessionFlags.find(sf => sf.id === f.id)) K_sessionFlags.push(f);
+        });
+        K_sessionFlags.sort((a, b) => b.timestamp - a.timestamp);
+        if (K_sessionFlags.length > 0) {
+          K_renderFlags();
+          K_updateStats();
+          K_updatePatternCounters();
+          if (K_chartsInitialized) K_updateCharts();
+        }
+        K_retroactivelyFixTitles(stored);
+        resolve();
+      };
+      req.onerror = () => resolve();
+    } catch(e) { resolve(); }
+  });
+}
+
+async function K_retroactivelyFixTitles(flags) {
+  const needsUpdate = flags.filter(f => f.ticker && f.title && !f.title.includes(' '));
+  if (!needsUpdate.length) return;
+  for (const flag of needsUpdate) {
+    try {
+      const mUrl = K_BASE_URL + '/markets/' + flag.ticker;
+      const mData = await K_fetchWithProxyFallback(mUrl, 5000);
+      if (mData && mData.market && mData.market.title && mData.market.title !== flag.title) {
+        flag.title = mData.market.title;
+        K_putMarketInCache(flag.ticker, mData.market);
+        K_saveFlag(flag);
+      }
+      await new Promise(r => setTimeout(r, 150));
+    } catch(e) {}
+  }
+  if (needsUpdate.length > 0) K_renderFlags();
+}
+
+/* ============================================================
+   KALSHI OUTCOME LOG
+   ============================================================ */
+
+async function K_checkAndLogOutcomes() {
+  const unresolved = K_sessionFlags.filter(f => f.outcome === null || f.outcome === undefined);
+  if (!unresolved.length) return;
+  for (const flag of unresolved) {
+    try {
+      const url = K_BASE_URL + '/markets/' + flag.ticker;
+      const data = await K_fetchWithProxyFallback(url, 5000);
+      if (!data || !data.market) continue;
+      const m = data.market;
+      K_putMarketInCache(flag.ticker, m);
+      if (m.result && m.result !== '') {
+        const correct = flag.side.toLowerCase() === m.result.toLowerCase();
+        const outcome = {
+          flagId: flag.id, ticker: flag.ticker, title: flag.title,
+          category: flag.category, flaggedSide: flag.side, flaggedPrice: flag.sidePrice,
+          actualResult: m.result.toUpperCase(), correct, score: flag.score,
+          patternIds: flag.patternIds || [], hoursToClose: flag.hoursToClose,
+          flaggedAt: flag.timestamp, resolvedAt: Date.now(),
+        };
+        K_saveOutcome(outcome);
+        flag.outcome = correct ? 'correct' : 'wrong';
+        K_saveFlag(flag);
+        K_updateProfileOutcome(flag, correct);
+        K_updateOutcomeSummary();
+      }
+      await new Promise(r => setTimeout(r, 150));
+    } catch(e) {}
+  }
+}
+
+function K_saveOutcome(outcome) {
+  if (!K_db) return;
+  try {
+    const tx = K_db.transaction(K_STORE_OUTCOMES, 'readwrite');
+    tx.objectStore(K_STORE_OUTCOMES).put(outcome);
+  } catch(e) {}
+}
+
+async function K_loadOutcomeSummary() {
+  if (!K_db) return;
+  return new Promise(resolve => {
+    try {
+      const tx = K_db.transaction(K_STORE_OUTCOMES, 'readonly');
+      const req = tx.objectStore(K_STORE_OUTCOMES).getAll();
+      req.onsuccess = () => {
+        K_outcomeSummary = K_computeOutcomeSummary(req.result || []);
+        K_updateOutcomeSummary();
+        resolve();
+      };
+      req.onerror = () => resolve();
+    } catch(e) { resolve(); }
+  });
+}
+
+function K_computeOutcomeSummary(outcomes) {
+  const summary = { total: outcomes.length, correct: 0, byCategory: {}, byPattern: {} };
+  for (const o of outcomes) {
+    if (o.correct) summary.correct++;
+    const cat = o.category || 'Other';
+    if (!summary.byCategory[cat]) summary.byCategory[cat] = { total: 0, correct: 0 };
+    summary.byCategory[cat].total++;
+    if (o.correct) summary.byCategory[cat].correct++;
+    for (const pid of (o.patternIds || [])) {
+      if (!summary.byPattern[pid]) summary.byPattern[pid] = { total: 0, correct: 0 };
+      summary.byPattern[pid].total++;
+      if (o.correct) summary.byPattern[pid].correct++;
+    }
+  }
+  return summary;
+}
+
+function K_updateOutcomeSummary() {
+  const el = document.getElementById('k-outcomeSummaryBar');
+  if (!el) return;
+  const { total, correct, byCategory } = K_outcomeSummary;
+  if (total === 0) {
+    el.innerHTML = '<span style="color:var(--text-secondary);font-size:12px">No resolved flags yet — outcomes appear as markets settle</span>';
+    return;
+  }
+  const pct = Math.round(correct / total * 100);
+  const catRows = Object.entries(byCategory)
+    .sort((a, b) => b[1].total - a[1].total)
+    .map(([cat, s]) => {
+      const cp = Math.round(s.correct / s.total * 100);
+      const color = cp >= 75 ? 'var(--accent-green)' : cp >= 55 ? 'var(--accent-amber)' : 'var(--accent-red)';
+      return `<span class="chip" style="border-color:${color}"><span style="color:${color}">${cp}%</span> ${cat} (${s.total})</span>`;
+    }).join('');
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="font-family:var(--font-mono);font-size:18px;font-weight:600;color:${pct>=65?'var(--accent-green)':pct>=50?'var(--accent-amber)':'var(--accent-red)'}">${pct}%</div>
+      <div style="font-size:12px;color:var(--text-secondary)">${correct}/${total} flags correct</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${catRows}</div>
+    </div>`;
+  const badge = document.getElementById('k-outcomeBadge');
+  if (badge) badge.textContent = total + ' resolved';
+  K_renderTraderProfiles();
+}
+
+/* ============================================================
+   KALSHI TRADER PROFILES
+   ============================================================ */
+
+async function K_loadTraderProfiles() {
+  if (!K_db) return;
+  return new Promise(resolve => {
+    try {
+      const tx = K_db.transaction(K_STORE_TRADERS, 'readonly');
+      const req = tx.objectStore(K_STORE_TRADERS).getAll();
+      req.onsuccess = () => {
+        (req.result || []).forEach(p => { K_traderProfiles[p.profileId] = p; });
+        K_renderTraderProfiles();
+        resolve();
+      };
+      req.onerror = () => resolve();
+    } catch(e) { resolve(); }
+  });
+}
+
+function K_saveTraderProfile(profile) {
+  K_traderProfiles[profile.profileId] = profile;
+  if (!K_db) return;
+  try {
+    const tx = K_db.transaction(K_STORE_TRADERS, 'readwrite');
+    tx.objectStore(K_STORE_TRADERS).put(profile);
+  } catch(e) {}
+}
+
+function K_updateTraderProfiles(flag) {
+  const series = flag.ticker.split('-')[0];
+  const profileId = 'tp_' + series;
+  if (!K_traderProfiles[profileId]) {
+    K_traderProfiles[profileId] = {
+      profileId, series,
+      label: `Inferred ${K_SERIES_LABELS[series] || series} specialist`,
+      flags: [], firstSeen: flag.timestamp, lastSeen: flag.timestamp,
+      correctCount: 0, totalResolved: 0, categoryAccuracy: {},
+      sizeSignature: [], timingSignature: [], sideSignature: [],
+    };
+  }
+  const p = K_traderProfiles[profileId];
+  p.flags.push(flag.id);
+  p.lastSeen = flag.timestamp;
+  p.sizeSignature.push(flag.maxSingleTrade || 0);
+  p.timingSignature.push(flag.hoursToClose || 0);
+  p.sideSignature.push(flag.side);
+  if (p.sizeSignature.length > 20) p.sizeSignature.shift();
+  if (p.timingSignature.length > 20) p.timingSignature.shift();
+  if (p.sideSignature.length > 20) p.sideSignature.shift();
+  const yesPref = p.sideSignature.filter(s => s === 'YES').length / p.sideSignature.length;
+  p.sidePref = yesPref > 0.7 ? 'YES-biased' : yesPref < 0.3 ? 'NO-biased' : 'Balanced';
+  const avgTiming = p.timingSignature.reduce((a,b)=>a+b,0) / p.timingSignature.length;
+  p.timingPref = avgTiming < 2 ? 'Last-minute' : avgTiming < 12 ? 'Near-close' : 'Early';
+  const sortedSizes = [...p.sizeSignature].sort((a,b)=>a-b);
+  p.typicalSize = sortedSizes[Math.floor(sortedSizes.length/2)];
+  p.confidence = Math.min(100, Math.round((p.flags.length / 5) * 40 + (p.flags.length >= 10 ? 30 : 0)));
+  K_saveTraderProfile(p);
+  return profileId;
+}
+
+function K_updateProfileOutcome(flag, correct) {
+  const series = flag.ticker.split('-')[0];
+  const profileId = 'tp_' + series;
+  const p = K_traderProfiles[profileId];
+  if (!p) return;
+  p.totalResolved++;
+  if (correct) p.correctCount++;
+  p.winRate = Math.round(p.correctCount / p.totalResolved * 100);
+  const cat = flag.category || 'Other';
+  if (!p.categoryAccuracy[cat]) p.categoryAccuracy[cat] = { correct: 0, total: 0 };
+  p.categoryAccuracy[cat].total++;
+  if (correct) p.categoryAccuracy[cat].correct++;
+  K_saveTraderProfile(p);
+}
+
+function K_getHighConfidenceProfiles() {
+  return Object.values(K_traderProfiles)
+    .filter(p => p.flags.length >= 3 && p.confidence >= 30)
+    .sort((a, b) => (b.winRate||0) - (a.winRate||0));
+}
+
+function K_renderTraderProfiles() {
+  const el = document.getElementById('k-traderProfilesList');
+  if (!el) return;
+  const profiles = K_getHighConfidenceProfiles();
+  if (!profiles.length) {
+    el.innerHTML = '<span style="color:var(--text-secondary);font-size:12px">Profiles build as flags accumulate across sessions (need ≥3 flags per series)</span>';
+    return;
+  }
+  el.innerHTML = profiles.slice(0, 8).map(p => {
+    const wr = p.winRate !== undefined ? p.winRate + '%' : 'pending';
+    const wrColor = (p.winRate||0) >= 70 ? 'var(--accent-green)' : (p.winRate||0) >= 50 ? 'var(--accent-amber)' : 'var(--accent-red)';
+    const topCats = Object.entries(p.categoryAccuracy||{})
+      .sort((a,b)=>b[1].total-a[1].total).slice(0,2)
+      .map(([c,s])=>`${c}: ${Math.round(s.correct/s.total*100)}%`).join(', ');
+    return `
+      <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:3px">${escHtml(p.label)}</div>
+            <div style="font-size:11px;color:var(--text-secondary)">${p.flags.length} flags &middot; ${p.timingPref} &middot; ${p.sidePref} &middot; typical ${Math.round(p.typicalSize||0)} contracts</div>
+            ${topCats ? `<div style="font-size:10px;color:var(--text-secondary);margin-top:2px">${topCats}</div>` : ''}
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:${wrColor}">${wr}</div>
+            <div style="font-size:10px;color:var(--text-secondary)">win rate</div>
+            <div style="font-size:10px;color:var(--text-secondary);margin-top:2px">conf: ${p.confidence}%</div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   KALSHI SETTINGS / KEYBOARD
+   ============================================================ */
+
+function K_saveSettings() {
+  const emailEl = document.getElementById('k-settingsEmail');
+  const webhookEl = document.getElementById('k-settingsWebhook');
+  const thresholdEl = document.getElementById('k-settingsThreshold');
+  const intervalEl = document.getElementById('k-settingsInterval');
+  if (emailEl) localStorage.setItem('kw_email', emailEl.value);
+  if (webhookEl) localStorage.setItem('kw_webhook', webhookEl.value);
+  if (thresholdEl) localStorage.setItem('kw_threshold', thresholdEl.value);
+  if (intervalEl) {
+    const interval = parseInt(intervalEl.value);
+    if (!isNaN(interval) && interval >= 30) {
+      K_refreshInterval = interval;
+      K_resetCountdown();
+    }
+  }
+}
+
+function K_loadSettings() {
+  const email = localStorage.getItem('kw_email');
+  const webhook = localStorage.getItem('kw_webhook');
+  const threshold = localStorage.getItem('kw_threshold');
+  const emailEl = document.getElementById('k-settingsEmail');
+  const webhookEl = document.getElementById('k-settingsWebhook');
+  const thresholdEl = document.getElementById('k-settingsThreshold');
+  if (email && emailEl) emailEl.value = email;
+  if (webhook && webhookEl) webhookEl.value = webhook;
+  if (threshold && thresholdEl) thresholdEl.value = threshold;
+}
+
+/* ============================================================
+   KALSHI INIT
+   ============================================================ */
+
+function K_init() {
+  K_initDB();
+  K_loadSettings();
+  K_startCountdown();
+  K_startSessionTimer();
+  // Check outcomes every 5 minutes
+  setInterval(K_checkAndLogOutcomes, 5 * 60 * 1000);
+  // First fetch on load
+  setTimeout(K_manualRefresh, 800);
+}
+
+/* ============================================================
+   TAB CONTROLLER + BOOT
+   ============================================================ */
+
+// Boot both engines on load
+document.addEventListener('DOMContentLoaded', () => {
+  P_init();
+  K_init();
+});
+
+// Keyboard shortcut: Escape closes any open drill panel
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    K_closeDrillPanel();
+    P_closeDrillPanel();
+  }
+});
+
+</script>
+
+
+</body>
+</html>
