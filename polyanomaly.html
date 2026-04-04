@@ -2024,18 +2024,23 @@ const P_CORS_PROXIES = [
 ];
 
 async function P_fetchWithProxyFallback(apiUrl, timeout) {
-  timeout = timeout || 6000;
+  timeout = timeout || 8000;
   for (const proxyFn of P_CORS_PROXIES) {
     try {
       const res = await Promise.race([
         fetch(proxyFn(apiUrl), { headers: { 'Accept': 'application/json' } }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), timeout))
       ]);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
-        if (data && typeof data === 'object' && !Array.isArray(data)) return data;
+      if (!res.ok) continue;
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch(e) { continue; }
+      // allorigins wraps in { contents: "..." }
+      if (data && data.contents) {
+        try { data = JSON.parse(data.contents); } catch(e) { continue; }
       }
+      if (Array.isArray(data)) return data; // including empty arrays
+      if (data && typeof data === 'object') return data;
     } catch(e) { /* try next proxy */ }
   }
   return null;
@@ -2134,8 +2139,11 @@ function P_scoreTradeGroup(market, trades) {
   const finalScore = Math.min(99, composite + bonus);
 
   const layers = [sizeScore, impactScore, timingScore, walletScore, historyScore];
-  const layersOver50 = layers.filter(l => l > 50).length;
-  if (finalScore < 65 || layersOver50 < 3) return null;
+  // walletScore and historyScore are structural constants (no per-wallet API data on quick refresh).
+  // Only 3 layers carry real signal, so gate on those 3 alone.
+  const dynamicLayers = [sizeScore, impactScore, timingScore];
+  const layersOver50 = dynamicLayers.filter(l => l > 50).length;
+  if (finalScore < 65 || layersOver50 < 2) return null;
 
   return {
     id: 'palert_' + market.id + '_' + (trades[0].proxyWallet||'u') + '_' + Date.now(),
@@ -2160,15 +2168,20 @@ function P_scoreTradeGroup(market, trades) {
 async function P_manualRefresh() {
   if (P_scanPaused) return;
   P_setRefreshState(true);
+  const statusEl = document.getElementById('p-empty-state');
   try {
-    const data = await P_fetchWithProxyFallback('https://data-api.polymarket.com/trades?limit=200', 8000);
+    const data = await P_fetchWithProxyFallback('https://data-api.polymarket.com/trades?limit=200', 10000);
     if (!data || !Array.isArray(data) || data.length === 0) {
-      showToast('No trade data returned — check connection');
+      showToast('No trade data returned — all CORS proxies may be down');
+      if (statusEl) statusEl.querySelector && (statusEl.querySelector('p') || {}).textContent
+        !== undefined && statusEl.insertAdjacentHTML('beforeend',
+          '<p style="color:var(--accent-amber);font-size:0.8rem;margin-top:8px">CORS proxy unavailable — try again in 30s</p>');
     } else {
+      showToast('Fetched ' + data.length + ' Polymarket trades', 'info');
       P_processTradeBatch(data);
     }
   } catch(e) {
-    showToast('Feed fetch failed: ' + e.message);
+    showToast('Polymarket fetch failed: ' + (e.message || 'network error'));
   }
   P_setRefreshState(false);
   P_resetCountdown();
@@ -2199,7 +2212,9 @@ function P_processTradeBatch(trades) {
       endDate: null,
       outcomePrices: null,
       volume: 0,
-      liquidity: 50000,
+      // Use a realistic default — Polymarket markets avg $10k–$50k liquidity.
+      // Overstating it (50k) kills sizeScore for normal trades; 10k is a better baseline.
+      liquidity: 10000,
       slug: g.sample.eventSlug || g.sample.slug || '',
     };
     const alert = P_scoreTradeGroup(market, g.trades);
