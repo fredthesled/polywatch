@@ -1,0 +1,3365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KalshiWatch &mdash; Kalshi Market Anomaly Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<style>
+/* ============================================================
+   KALSHIWATCH — CSS
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:          #1a1714;
+  --bg-2:        #201d1a;
+  --bg-3:        #272320;
+  --bg-card:     #222019;
+  --bg-card2:    #252320;
+  --border:      #332e2a;
+  --border-2:    #3d3834;
+
+  --text:        #f5f0eb;
+  --text-2:      #c8bfb5;
+  --text-3:      #8a8078;
+  --text-4:      #5a5450;
+
+  --accent:      #5c9ea0;
+  --accent-dim:  #3d6e70;
+  --accent-glow: rgba(92,158,160,0.18);
+
+  --green:       #7a9e7e;
+  --green-dim:   #4a6a4d;
+  --red:         #d4849a;
+  --red-dim:     #8a4a5d;
+  --yellow:      #e8b96a;
+  --yellow-dim:  #8a6a30;
+  --orange:      #d4894a;
+  --orange-dim:  #8a5020;
+
+  --score-high:  #d4849a;
+  --score-mid:   #e8b96a;
+  --score-low:   #c8a85a;
+
+  --font-sans:   'DM Sans', system-ui, sans-serif;
+  --font-mono:   'DM Mono', 'Courier New', monospace;
+
+  --radius:      8px;
+  --radius-lg:   12px;
+  --radius-sm:   5px;
+
+  --shadow:      0 2px 12px rgba(0,0,0,0.35);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,0.5);
+}
+
+html { font-size: 14px; scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.5;
+}
+
+/* ---- SCROLLBAR ---- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-2); }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-4); }
+
+/* ---- LAYOUT ---- */
+.app-wrap {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  display: flex;
+  flex: 1;
+  gap: 0;
+  position: relative;
+}
+
+.left-col {
+  flex: 1;
+  min-width: 0;
+  padding: 0 20px 40px 20px;
+  max-width: calc(100vw - 0px);
+  transition: max-width 0.3s ease;
+}
+
+.left-col.panel-open {
+  max-width: calc(100vw - 440px);
+}
+
+/* ---- HEADER ---- */
+.app-header {
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0 10px;
+  gap: 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.brand-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.brand-sub {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.db-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-4);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+.db-dot.ok { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.db-dot.error { background: var(--red); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  background: var(--bg-3);
+  color: var(--text-2);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn:hover {
+  background: var(--bg-card2);
+  color: var(--text);
+  border-color: var(--text-4);
+}
+.btn.accent {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.btn.accent:hover {
+  background: var(--accent);
+  color: #fff;
+}
+.btn.sm {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.refresh-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.countdown {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-3);
+  min-width: 32px;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: none;
+}
+.spinner.active { display: block; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- STATS BAR ---- */
+.stats-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px 9px 0;
+  margin-right: 18px;
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.stat-item:last-child { border-right: none; margin-right: 0; }
+
+.stat-val {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+
+/* ---- FILTER BAR ---- */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 0 10px;
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.pill {
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-2);
+  background: var(--bg-3);
+  color: var(--text-3);
+  font-size: 0.76rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.pill:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.pill.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.filter-sliders {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.slider-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.slider-label {
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+
+.slider-val {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent);
+  min-width: 28px;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 90px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-2);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+/* ---- FLAG GRID ---- */
+.section-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.flag-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+}
+
+/* ---- FLAG CARD ---- */
+.flag-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.18s;
+  position: relative;
+  overflow: hidden;
+}
+.flag-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  border-radius: 3px 0 0 3px;
+  background: var(--accent);
+}
+.flag-card:hover {
+  border-color: var(--accent-dim);
+  background: var(--bg-card2);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+.flag-card.selected {
+  border-color: var(--accent);
+  background: var(--bg-card2);
+}
+.flag-card.score-high::before { background: var(--red); }
+.flag-card.score-mid::before { background: var(--orange); }
+.flag-card.score-low::before { background: var(--yellow); }
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.score-badge {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 500;
+  min-width: 42px;
+  height: 42px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.score-badge.high {
+  background: rgba(212,132,154,0.18);
+  color: var(--red);
+  border: 1px solid rgba(212,132,154,0.35);
+}
+.score-badge.mid {
+  background: rgba(212,137,74,0.18);
+  color: var(--orange);
+  border: 1px solid rgba(212,137,74,0.35);
+}
+.score-badge.low {
+  background: rgba(232,185,106,0.18);
+  color: var(--yellow);
+  border: 1px solid rgba(232,185,106,0.35);
+}
+
+.card-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin-bottom: 5px;
+}
+
+.card-badges {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.69rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.badge.cat {
+  background: rgba(92,158,160,0.15);
+  color: var(--accent);
+  border: 1px solid rgba(92,158,160,0.3);
+}
+.badge.side-yes {
+  background: rgba(122,158,126,0.18);
+  color: var(--green);
+  border: 1px solid rgba(122,158,126,0.35);
+}
+.badge.side-no {
+  background: rgba(212,132,154,0.18);
+  color: var(--red);
+  border: 1px solid rgba(212,132,154,0.35);
+}
+.badge.pattern {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-3);
+  border: 1px solid var(--border);
+}
+.badge.pattern.jit { background: rgba(212,132,154,0.12); color: var(--red); border-color: rgba(212,132,154,0.3); }
+.badge.pattern.whale { background: rgba(232,185,106,0.12); color: var(--yellow); border-color: rgba(232,185,106,0.3); }
+.badge.pattern.pi { background: rgba(122,158,126,0.12); color: var(--green); border-color: rgba(122,158,126,0.3); }
+
+.card-stats {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.stat-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.stat-mini-label {
+  font-size: 0.65rem;
+  color: var(--text-4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.stat-mini-val {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.time-ago {
+  font-size: 0.7rem;
+  color: var(--text-4);
+  font-family: var(--font-mono);
+}
+
+/* ---- EMPTY STATE ---- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-4);
+  gap: 10px;
+}
+.empty-state svg { opacity: 0.3; }
+.empty-state p { font-size: 0.9rem; }
+.empty-state .hint { font-size: 0.78rem; }
+
+/* ---- DRILL-DOWN PANEL ---- */
+.drill-panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 440px;
+  background: var(--bg-2);
+  border-left: 1px solid var(--border);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: var(--shadow-lg);
+}
+.drill-panel.open {
+  transform: translateX(0);
+}
+
+.drill-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.drill-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.close-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.close-btn:hover { background: var(--bg-3); color: var(--text); }
+
+.drill-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 18px;
+}
+
+.drill-section {
+  margin-bottom: 20px;
+}
+
+.drill-section-title {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 5px var(--green);
+  animation: pulse-dot 2s infinite;
+  flex-shrink: 0;
+}
+.live-dot.grey {
+  background: var(--text-4);
+  box-shadow: none;
+  animation: none;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.trade-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.trade-table th {
+  font-size: 0.66rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-4);
+  text-align: left;
+  padding: 0 8px 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.trade-table td {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-2);
+  padding: 6px 8px 6px 0;
+  border-bottom: 1px solid rgba(51,46,42,0.5);
+  vertical-align: middle;
+}
+.trade-table tr:last-child td { border-bottom: none; }
+.trade-table tr:hover td { color: var(--text); }
+
+.trade-id-cell {
+  font-size: 0.65rem;
+  color: var(--text-4);
+  cursor: pointer;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trade-id-cell:hover { color: var(--accent); }
+
+/* Score breakdown bars */
+.score-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.score-row-label {
+  font-size: 0.73rem;
+  color: var(--text-3);
+  width: 72px;
+  flex-shrink: 0;
+}
+.score-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.score-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+.score-row-num {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-3);
+  min-width: 28px;
+  text-align: right;
+}
+
+/* Emulate panel */
+.emulate-box {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.emulate-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.emulate-label {
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+.emulate-val {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.kalshi-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px 14px;
+  margin-top: 10px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.kalshi-link:hover { background: var(--accent); color: #fff; }
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.info-item-label {
+  font-size: 0.67rem;
+  color: var(--text-4);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.info-item-val {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.info-item-val.copyable {
+  cursor: pointer;
+}
+.info-item-val.copyable:hover { color: var(--accent); }
+
+/* ---- COLLAPSIBLE SECTION ---- */
+.collapsible-section {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.collapsible-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.collapsible-header:hover { background: var(--bg-3); }
+.collapsible-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chevron {
+  color: var(--text-4);
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+}
+.collapsible-section.expanded .chevron { transform: rotate(180deg); }
+.collapsible-body {
+  display: none;
+  padding: 0 18px 18px;
+}
+.collapsible-section.expanded .collapsible-body { display: block; }
+
+/* ---- CHARTS ---- */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 12px;
+}
+.chart-card {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.chart-card-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 10px;
+}
+.chart-canvas-wrap {
+  position: relative;
+  height: 160px;
+}
+
+/* ---- BACKSCRAPE ---- */
+.backscrape-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.bs-select {
+  background: var(--bg-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  padding: 5px 10px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.bs-select:hover, .bs-select:focus { border-color: var(--accent); }
+
+.backscrape-table-wrap {
+  overflow-x: auto;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.backscrape-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+.backscrape-table th {
+  font-size: 0.67rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-4);
+  text-align: left;
+  padding: 0 12px 8px 0;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg-2);
+}
+.backscrape-table td {
+  font-size: 0.78rem;
+  color: var(--text-2);
+  padding: 8px 12px 8px 0;
+  border-bottom: 1px solid rgba(51,46,42,0.4);
+  vertical-align: middle;
+}
+.backscrape-table td:first-child { font-family: var(--font-mono); font-size: 0.72rem; }
+.backscrape-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+.bs-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: var(--text-3);
+}
+.bs-progress-bar-track {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.bs-progress-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* ---- SETTINGS PANEL ---- */
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 4px;
+}
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.settings-label {
+  font-size: 0.73rem;
+  color: var(--text-3);
+}
+.settings-input {
+  background: var(--bg-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.settings-input:focus { border-color: var(--accent); }
+.settings-note {
+  font-size: 0.72rem;
+  color: var(--text-4);
+  line-height: 1.5;
+  margin-top: 10px;
+  padding: 10px;
+  background: var(--bg-3);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--accent-dim);
+}
+
+/* ---- PATTERN COUNTER BAR ---- */
+.pattern-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.pattern-counter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+.pattern-counter-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.pattern-counter-name {
+  font-size: 0.75rem;
+  color: var(--text-2);
+}
+.pattern-counter-num {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-left: 2px;
+}
+
+/* ---- TOAST ---- */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;
+}
+.toast {
+  background: var(--bg-3);
+  border: 1px solid var(--border-2);
+  color: var(--text-2);
+  font-size: 0.8rem;
+  padding: 8px 18px;
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  animation: toast-in 0.2s ease, toast-out 0.3s 2.5s ease forwards;
+  pointer-events: all;
+}
+.toast.success { border-color: var(--green); color: var(--green); }
+.toast.error { border-color: var(--red); color: var(--red); }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes toast-out {
+  to { opacity: 0; transform: translateY(6px); }
+}
+
+/* ---- LOADING OVERLAY ---- */
+.scan-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(26,23,20,0.7);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+}
+.scan-overlay.active { display: flex; }
+.scan-box {
+  background: var(--bg-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-lg);
+  padding: 24px 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-width: 260px;
+}
+.scan-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border-2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.scan-label {
+  font-size: 0.88rem;
+  color: var(--text-2);
+}
+.scan-sub {
+  font-size: 0.75rem;
+  color: var(--text-4);
+  font-family: var(--font-mono);
+}
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .charts-grid { grid-template-columns: 1fr; }
+  .settings-grid { grid-template-columns: 1fr; }
+  .left-col.panel-open { max-width: 100%; }
+  .drill-panel { width: 100%; border-left: none; border-top: 1px solid var(--border); top: auto; }
+}
+
+@media (max-width: 600px) {
+  .filter-bar { flex-direction: column; align-items: flex-start; }
+  .filter-sliders { margin-left: 0; }
+  .flag-grid { grid-template-columns: 1fr; }
+}
+
+/* ---- MISC ---- */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+.mono { font-family: var(--font-mono); }
+.text-sm { font-size: 0.78rem; }
+.text-xs { font-size: 0.7rem; }
+.color-accent { color: var(--accent); }
+.color-green { color: var(--green); }
+.color-red { color: var(--red); }
+.color-yellow { color: var(--yellow); }
+.color-muted { color: var(--text-3); }
+
+.flag-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  min-width: 22px;
+}
+
+.no-results {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-4);
+  font-size: 0.82rem;
+}
+
+/* ---- OUTCOME LOG ---- */
+.outcome-cat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid rgba(245,240,235,0.15);
+  border-radius: 20px;
+  font-size: 11px;
+  color: rgba(245,240,235,0.6);
+}
+
+.section-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.section-header:hover { background: var(--bg-3); }
+.section-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-icon {
+  color: var(--accent);
+  font-size: 1rem;
+}
+.section-badge {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--text-4);
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1px 8px;
+  margin-left: 4px;
+}
+.section-body {
+  padding: 0 18px 18px;
+}
+.drill-section-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     APP STRUCTURE
+     ============================================================ -->
+<div class="app-wrap">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-top">
+      <a class="brand" href="#" onclick="return false;">
+        <!-- SVG Logo: stylized K + waveform representing market signals -->
+        <svg class="brand-logo" viewBox="0 0 36 36" fill="none" aria-label="KalshiWatch logo">
+          <rect width="36" height="36" rx="8" fill="#1e3a3b"/>
+          <path d="M10 9v18M10 18l9-9M10 18l9 9" stroke="#5c9ea0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M22 13 Q25 18 22 23" stroke="#7a9e7e" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+          <path d="M25.5 11 Q30 18 25.5 25" stroke="#5c9ea0" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.5"/>
+        </svg>
+        <div class="brand-text">
+          <span class="brand-name">KalshiWatch</span>
+          <span class="brand-sub">Kalshi Market Anomaly Tracker</span>
+        </div>
+      </a>
+
+      <div class="header-controls">
+        <div class="db-dot" id="dbDot" title="IndexedDB status"></div>
+        <div class="refresh-wrap">
+          <div class="spinner" id="refreshSpinner"></div>
+          <span class="countdown" id="countdown">30s</span>
+          <button class="btn accent" id="refreshBtn" onclick="manualRefresh()">&#8635; Refresh</button>
+          <button class="btn sm" id="pauseBtn" onclick="togglePause()" title="Pause auto-refresh">&#9646;&#9646; Pause</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-val" id="statFlags">0</span>
+        <span class="stat-label">Flags This Session</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-val" id="statScanned">0</span>
+        <span class="stat-label">Markets Scanned</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-val" id="statPatterns">0</span>
+        <span class="stat-label">Active Patterns</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-val" id="statTime">0:00</span>
+        <span class="stat-label">Session Time</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+    <div class="left-col" id="leftCol">
+
+      <!-- FILTER BAR -->
+      <div class="filter-bar" style="padding-top:16px;">
+        <div class="pills" id="catPills">
+          <button class="pill active" data-cat="ALL" onclick="setCat('ALL')">ALL</button>
+          <button class="pill" data-cat="Politics" onclick="setCat('Politics')">Politics</button>
+          <button class="pill" data-cat="Crypto" onclick="setCat('Crypto')">Crypto</button>
+          <button class="pill" data-cat="Sports" onclick="setCat('Sports')">Sports</button>
+          <button class="pill" data-cat="Economy" onclick="setCat('Economy')">Economy</button>
+          <button class="pill" data-cat="Tech" onclick="setCat('Tech')">Tech</button>
+          <button class="pill" data-cat="Climate" onclick="setCat('Climate')">Climate</button>
+          <button class="pill" data-cat="Geopolitics" onclick="setCat('Geopolitics')">Geopolitics</button>
+          <button class="pill" data-cat="Other" onclick="setCat('Other')">Other</button>
+        </div>
+        <div class="filter-sliders">
+          <div class="slider-group">
+            <span class="slider-label">Min Score</span>
+            <input type="range" id="scoreSlider" min="60" max="99" value="60" oninput="onSliderChange()">
+            <span class="slider-val" id="scoreSliderVal">60</span>
+          </div>
+          <div class="slider-group">
+            <span class="slider-label">Min Contracts</span>
+            <input type="range" id="contractsSlider" min="1" max="500" value="1" oninput="onSliderChange()">
+            <span class="slider-val" id="contractsSliderVal">1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PATTERN COUNTERS -->
+      <div class="pattern-bar" id="patternBar">
+        <div class="pattern-counter" id="pc-jit">
+          <div class="pattern-counter-dot" style="background:#d4849a;"></div>
+          <span class="pattern-counter-name">Pre-Close Surge</span>
+          <span class="pattern-counter-num" id="pn-jit">0</span>
+        </div>
+        <div class="pattern-counter" id="pc-whale">
+          <div class="pattern-counter-dot" style="background:#e8b96a;"></div>
+          <span class="pattern-counter-name">Whale Block</span>
+          <span class="pattern-counter-num" id="pn-whale">0</span>
+        </div>
+        <div class="pattern-counter" id="pc-pi">
+          <div class="pattern-counter-dot" style="background:#7a9e7e;"></div>
+          <span class="pattern-counter-name">Price Dislocation</span>
+          <span class="pattern-counter-num" id="pn-pi">0</span>
+        </div>
+      </div>
+
+      <!-- FLAG CARDS SECTION -->
+      <div class="section-title">
+        <span>&#9650; Live Flags</span>
+        <span class="flag-count-badge" id="flagCountBadge">0</span>
+      </div>
+      <div class="flag-grid" id="flagGrid">
+        <!-- Empty state -->
+        <div class="empty-state" id="emptyState" style="grid-column:1/-1;">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="20" stroke="#5a5450" stroke-width="2"/>
+            <path d="M24 14v12M24 30v4" stroke="#5a5450" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+          <p>No anomaly flags yet</p>
+          <span class="hint">Click Refresh to scan the Kalshi trade feed.</span>
+        </div>
+      </div>
+
+      <div style="height:20px;"></div>
+
+      <!-- CHARTS SECTION (collapsible) -->
+      <div class="collapsible-section" id="chartSection">
+        <div class="collapsible-header" onclick="toggleSection('chartSection')">
+          <span class="collapsible-title">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="8" width="3" height="7" rx="1" fill="#5c9ea0"/><rect x="6" y="5" width="3" height="10" rx="1" fill="#7a9e7e"/><rect x="11" y="2" width="3" height="13" rx="1" fill="#e8b96a"/></svg>
+            Analytics
+          </span>
+          <span class="chevron">&#8964;</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="charts-grid">
+            <div class="chart-card">
+              <div class="chart-card-title">Flags Over Time</div>
+              <div class="chart-canvas-wrap">
+                <canvas id="chartTimeline"></canvas>
+              </div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-card-title">Flags by Category</div>
+              <div class="chart-canvas-wrap">
+                <canvas id="chartCategory"></canvas>
+              </div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-card-title">Pattern Breakdown</div>
+              <div class="chart-canvas-wrap">
+                <canvas id="chartPatterns"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BACKSCRAPE SECTION (collapsible) -->
+      <div class="collapsible-section" id="backscrapeSection">
+        <div class="collapsible-header" onclick="toggleSection('backscrapeSection')">
+          <span class="collapsible-title">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#5c9ea0" stroke-width="1.5"/><path d="M8 5v4l2 1.5" stroke="#5c9ea0" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Market Backscrape
+          </span>
+          <span class="chevron">&#8964;</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="backscrape-controls">
+            <select class="bs-select" id="bsDepth">
+              <option value="50">Depth: 50 markets</option>
+              <option value="200" selected>Depth: 200 markets</option>
+              <option value="500">Depth: 500 markets</option>
+            </select>
+            <select class="bs-select" id="bsMinScore">
+              <option value="60" selected>Min Score: 60</option>
+              <option value="70">Min Score: 70</option>
+              <option value="80">Min Score: 80</option>
+              <option value="90">Min Score: 90</option>
+            </select>
+            <select class="bs-select" id="bsCategory">
+              <option value="ALL">All Categories</option>
+              <option value="Politics">Politics</option>
+              <option value="Crypto">Crypto</option>
+              <option value="Sports">Sports</option>
+              <option value="Economy">Economy</option>
+              <option value="Tech">Tech</option>
+              <option value="Climate">Climate</option>
+              <option value="Geopolitics">Geopolitics</option>
+              <option value="Other">Other</option>
+            </select>
+            <button class="btn accent" id="bsRunBtn" onclick="runBackscrape()">&#9654; Run Backscrape</button>
+            <button class="btn" id="bsStopBtn" onclick="stopBackscrape()" style="display:none;">&#9646;&#9646; Stop</button>
+          </div>
+          <div class="bs-progress" id="bsProgress" style="display:none;">
+            <span id="bsProgressLabel">Scanning...</span>
+            <div class="bs-progress-bar-track">
+              <div class="bs-progress-bar-fill" id="bsProgressBar" style="width:0%"></div>
+            </div>
+            <span id="bsProgressPct">0%</span>
+          </div>
+          <div class="backscrape-table-wrap" id="bsTableWrap">
+            <div class="no-results">Run a backscrape to discover historical anomalies across open markets.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS SECTION (collapsible) -->
+      <div class="collapsible-section" id="settingsSection">
+        <div class="collapsible-header" onclick="toggleSection('settingsSection')">
+          <span class="collapsible-title">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" stroke="#5c9ea0" stroke-width="1.5"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.57 3.57l1.42 1.42M11.01 11.01l1.42 1.42M3.57 12.43l1.42-1.42M11.01 4.99l1.42-1.42" stroke="#5c9ea0" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Settings
+          </span>
+          <span class="chevron">&#8964;</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="settings-grid">
+            <div class="settings-group">
+              <label class="settings-label">Email Alerts</label>
+              <input type="email" class="settings-input" id="settingsEmail" placeholder="your@email.com">
+            </div>
+            <div class="settings-group">
+              <label class="settings-label">Webhook URL</label>
+              <input type="url" class="settings-input" id="settingsWebhook" placeholder="https://...">
+            </div>
+            <div class="settings-group">
+              <label class="settings-label">Score Threshold</label>
+              <input type="number" class="settings-input" id="settingsThreshold" min="60" max="99" value="60">
+            </div>
+            <div class="settings-group">
+              <label class="settings-label">Auto-Refresh Interval</label>
+              <select class="bs-select" id="settingsInterval" style="width:100%;">
+                <option value="30">30 seconds</option>
+                <option value="60">60 seconds</option>
+                <option value="120">2 minutes</option>
+                <option value="300">5 minutes</option>
+              </select>
+            </div>
+          </div>
+          <div class="settings-note">
+            <strong>API Note:</strong> KalshiWatch routes all Kalshi API calls through a dedicated Supabase Edge Function proxy (<span class="mono">nigntdyuqxjktmaxttkc.supabase.co/functions/v1/kalshi-proxy</span>), which forwards to <span class="mono">api.elections.kalshi.com/trade-api/v2</span>. No authentication required for market data. Email/webhook features require a backend service.
+          </div>
+        </div>
+      </div>
+
+      <!-- OUTCOME LOG SECTION -->
+      <div class="section-card collapsible-section" id="outcomesSection">
+        <div class="section-header" onclick="toggleSection('outcomesSection')">
+          <div class="section-title">
+            <span class="section-icon">&#x2713;</span>
+            Outcome Log
+            <span class="section-badge" id="outcomeBadge">0 resolved</span>
+          </div>
+          <span class="chevron" id="outcomesSectionChev">&#9662;</span>
+        </div>
+        <div class="section-body collapsible-body" id="outcomesSectionBody">
+          <div id="outcomeSummaryBar" style="margin-bottom:16px;padding:12px;background:rgba(92,158,160,0.08);border:1px solid rgba(92,158,160,0.2);border-radius:8px">
+            <span style="color:rgba(245,240,235,0.35);font-size:12px">No resolved flags yet</span>
+          </div>
+
+          <!-- Trader Profiles -->
+          <div class="drill-section-label" style="margin-bottom:8px">Inferred Trader Profiles
+            <span style="font-size:10px;color:rgba(245,240,235,0.35);font-weight:400;margin-left:6px">(inferred from series patterns, not real identities)</span>
+          </div>
+          <div id="traderProfilesList" style="margin-bottom:16px">
+            <span style="color:rgba(245,240,235,0.35);font-size:12px">Profiles build as flags accumulate across sessions</span>
+          </div>
+
+          <!-- Full outcome table -->
+          <div class="drill-section-label" style="margin-bottom:8px">Resolved Flags</div>
+          <div style="overflow-x:auto">
+            <table class="backscrape-table" id="outcomeTable">
+              <thead>
+                <tr>
+                  <th>Market</th>
+                  <th>Category</th>
+                  <th>Flagged</th>
+                  <th>Result</th>
+                  <th>Score</th>
+                  <th>Patterns</th>
+                  <th>&#x2713;/&#x2717;</th>
+                </tr>
+              </thead>
+              <tbody id="outcomeTableBody">
+                <tr><td colspan="7" style="text-align:center;color:rgba(245,240,235,0.3);padding:20px">No resolved outcomes yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /left-col -->
+
+    <!-- DRILL-DOWN PANEL -->
+    <div class="drill-panel" id="drillPanel">
+      <div class="drill-header">
+        <div class="drill-title" id="drillTitle">Market Detail</div>
+        <button class="close-btn" onclick="closeDrillPanel()" title="Close">&times;</button>
+      </div>
+      <div class="drill-body" id="drillBody">
+        <!-- populated dynamically -->
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /app-wrap -->
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- BACKSCRAPE SCAN OVERLAY -->
+<div class="scan-overlay" id="scanOverlay">
+  <div class="scan-box">
+    <div class="scan-spinner"></div>
+    <div class="scan-label" id="scanLabel">Scanning markets&hellip;</div>
+    <div class="scan-sub" id="scanSub">0 / 0 markets</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+'use strict';
+
+/* ============================================================
+   CONSTANTS & CONFIG
+   ============================================================ */
+
+const KALSHI_BASE = 'https://api.elections.kalshi.com/trade-api/v2';
+const PROXY_BASE  = 'https://nigntdyuqxjktmaxttkc.supabase.co/functions/v1/kalshi-proxy';
+
+// BASE_URL kept as alias so all call sites are unchanged
+const BASE_URL = KALSHI_BASE;
+
+const PATTERN_DEFS = [
+  { id: 'jit',   name: 'Pre-Close Surge',   color: '#d4849a', desc: 'Concentrated activity within 6h of close — potential informed positioning.' },
+  { id: 'whale', name: 'Whale Block',        color: '#e8b96a', desc: 'Single trade dominates the batch — one large counterparty absorbing liquidity.' },
+  { id: 'pi',    name: 'Price Dislocation',  color: '#7a9e7e', desc: 'Significant price deviation from midpoint paired with elevated volume.' },
+  { id: 'obi',   name: 'Book Imbalance',     color: '#5c9ea0', desc: 'Orderbook depth heavily skewed toward taker direction — structural bid agreement.' },
+  { id: 'sweep', name: 'Pre-Close Sweep',    color: '#c8a06e', desc: 'Large single-trade execution within 1h of close — conviction or informed exit.' },
+];
+
+const MARKET_CATEGORIES = ['Politics','Crypto','Sports','Economy','Tech','Climate','Geopolitics','Other'];
+
+const DB_NAME    = 'kalshiwatch_v1';
+const DB_VERSION = 2; // bump version to trigger onupgradeneeded
+const STORE_FLAGS   = 'flags';       // existing flag store
+const STORE_OUTCOMES = 'outcomes';   // NEW: resolved flag outcomes
+const STORE_MKTCACHE = 'mktcache';  // NEW: persistent market cache (replaces in-memory marketCache)
+const STORE_TRADERS  = 'traders';   // NEW: synthetic trader profiles
+
+/* ============================================================
+   STATE
+   ============================================================ */
+
+let sessionFlags = [];          // all flags this session
+let marketsScanned = 0;
+// marketCache replaced by two-level cache below (marketCacheL1 + IndexedDB)
+let activeFilter = 'ALL';
+let scoreThreshold = 60;
+let contractsThreshold = 1;
+let scanPaused = false;
+let sessionStart = Date.now();
+let countdownVal = 30;
+let countdownTimer = null;
+let refreshInterval = 30;
+let chartsInitialized = false;
+let chartTimeline = null;
+let chartCategory = null;
+let chartPatterns = null;
+let db = null;                  // IndexedDB instance
+let selectedFlagId = null;
+let bsStopped = false;
+
+/* ============================================================
+   CORS PROXY FETCH
+   ============================================================ */
+
+// Translate a full Kalshi URL into a Supabase proxy request
+// e.g. https://api.elections.kalshi.com/trade-api/v2/markets/trades?limit=200
+// becomes https://<project>.supabase.co/functions/v1/kalshi-proxy?path=/markets/trades&limit=200
+function buildProxyUrl(kalshiUrl) {
+  const u = new URL(kalshiUrl);
+  const path = u.pathname.replace('/trade-api/v2', '');
+  const params = new URLSearchParams(u.search);
+  params.set('path', path);
+  return PROXY_BASE + '?' + params.toString();
+}
+
+async function fetchWithProxyFallback(apiUrl, timeout = 8000) {
+  const proxyUrl = buildProxyUrl(apiUrl);
+  try {
+    const res = await Promise.race([
+      fetch(proxyUrl, { headers: { 'Accept': 'application/json' } }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), timeout))
+    ]);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data === 'object') return data;
+    }
+    // Log non-OK for debugging
+    console.warn('[KalshiWatch] Proxy returned', res.status, proxyUrl);
+  } catch(e) {
+    console.warn('[KalshiWatch] Proxy fetch error:', e.message);
+  }
+  return null;
+}
+
+/* ============================================================
+   CATEGORY DETECTION
+   ============================================================ */
+
+/* ============================================================
+   TICKER DECODING
+   Kalshi tickers follow: {SERIES}-{DATE}{TIME}{TEAMS}-{SUFFIX}
+   e.g. KXCS2GAME-26APR031500FCFAR-FC
+        KXMLBGAME-26APR031610CHCCLE-CHC
+        KXBTC15M-26APR031800-00
+   We can extract a readable fallback from the series + suffix parts
+   while waiting for the real market.title to load from cache.
+   ============================================================ */
+const SERIES_LABELS = {
+  // Esports
+  'KXCS2GAME':   'CS2 Match',
+  'KXCS2SERIES': 'CS2 Series',
+  'KXLOLGAME':   'LoL Match',
+  'KXDOTA2GAME': 'Dota2 Match',
+  // Baseball
+  'KXMLBGAME':   'MLB Game',
+  'KXMLBTOTAL':  'MLB Total Runs',
+  'KXMLBSPREAD': 'MLB Run Line',
+  'KXMLBPTS':    'MLB Player Props',
+  // Basketball
+  'KXNBAGAME':   'NBA Game',
+  'KXNBAPTS':    'NBA Player Points',
+  'KXNBAREB':    'NBA Player Rebounds',
+  'KXNBAAST':    'NBA Player Assists',
+  'KXNBA3PT':    'NBA Player 3-Pointers',
+  'KXNBASPREAD': 'NBA Spread',
+  'KXNBATOTAL':  'NBA Total Points',
+  'KXWNBAGAME':  'WNBA Game',
+  // Hockey
+  'KXNHLGAME':   'NHL Game',
+  'KXNHLTOTAL':  'NHL Total Goals',
+  // Football
+  'KXNFLGAME':   'NFL Game',
+  'KXNFLSPREAD': 'NFL Spread',
+  'KXNFLTOTAL':  'NFL Total Points',
+  // Soccer
+  'KXSOCGAME':   'Soccer Match',
+  'KXMLSGAME':   'MLS Match',
+  // Tennis
+  'KXWTAMATCH':  'WTA Match',
+  'KXATPMATCH':  'ATP Match',
+  // Crypto
+  'KXBTC15M':    'BTC Price (15min)',
+  'KXBTC1H':     'BTC Price (1hr)',
+  'KXBTCD':      'BTC Price (Daily)',
+  'KXBTC':       'BTC Price',
+  'KXETHD':      'ETH Price (Daily)',
+  'KXETH':       'ETH Price',
+  'KXSOLD':      'SOL Price (Daily)',
+  'KXSOL':       'SOL Price',
+  // Politics
+  'KXPRESNOMR':  'Republican Primary',
+  'KXPRESNOMD':  'Democratic Primary',
+  'KXPRES':      'Presidential Race',
+  'KXSENATE':    'Senate Race',
+  'KXHOUSE':     'House Race',
+  'KXGOV':       'Governor Race',
+  // Economy
+  'KXFED':       'Fed Rate Decision',
+  'KXCPI':       'CPI Report',
+  'KXJOBS':      'Jobs Report',
+  'KXGDP':       'GDP Report',
+  // Multi-leg
+  'KXMVESPORTSMULTIGAMEEXTENDED': 'Multi-Game Parlay',
+  'KXMVESPORTSMULTIGAME': 'Multi-Game Parlay',
+  'KXMVENBA':    'NBA Multi-Market',
+  'KXMVEMLB':    'MLB Multi-Market',
+};
+
+/* ============================================================
+   TWO-LEVEL MARKET CACHE (L1 = in-memory, L2 = IndexedDB, 1hr TTL)
+   ============================================================ */
+
+// Two-level cache: L1 = in-memory (fast), L2 = IndexedDB (persistent, 1hr TTL)
+const marketCacheL1 = {}; // replaces old marketCache object
+
+async function getMarketFromCache(ticker) {
+  if (marketCacheL1[ticker]) return marketCacheL1[ticker];
+  if (!db) return null;
+  return new Promise(resolve => {
+    try {
+      const tx = db.transaction(STORE_MKTCACHE, 'readonly');
+      const req = tx.objectStore(STORE_MKTCACHE).get(ticker);
+      req.onsuccess = () => {
+        const row = req.result;
+        if (row && (Date.now() - row.cachedAt) < 3600000) {
+          marketCacheL1[ticker] = row.market; // populate L1
+          resolve(row.market);
+        } else {
+          resolve(null);
+        }
+      };
+      req.onerror = () => resolve(null);
+    } catch(e) { resolve(null); }
+  });
+}
+
+function putMarketInCache(ticker, market) {
+  marketCacheL1[ticker] = market; // always update L1
+  if (!db) return;
+  try {
+    const tx = db.transaction(STORE_MKTCACHE, 'readwrite');
+    tx.objectStore(STORE_MKTCACHE).put({ ticker, market, cachedAt: Date.now() });
+  } catch(e) {}
+}
+
+async function loadMarketCacheFromDB() {
+  if (!db) return;
+  return new Promise(resolve => {
+    try {
+      const tx = db.transaction(STORE_MKTCACHE, 'readonly');
+      const req = tx.objectStore(STORE_MKTCACHE).getAll();
+      req.onsuccess = () => {
+        const now = Date.now();
+        (req.result || []).forEach(row => {
+          if ((now - row.cachedAt) < 3600000) {
+            marketCacheL1[row.ticker] = row.market;
+          }
+        });
+        resolve();
+      };
+      req.onerror = () => resolve();
+    } catch(e) { resolve(); }
+  });
+}
+
+function decodeTicker(ticker) {
+  if (!ticker) return ticker;
+  const parts = ticker.split('-');
+  const series = parts[0];
+  const label = SERIES_LABELS[series];
+  // Last segment is the market suffix (team abbrev, price level, etc.)
+  const suffix = parts[parts.length - 1];
+  // Middle segment often has date+time+teams: 26APR031500FCFAR
+  // Extract teams portion (after the 11-char date+time prefix like 26APR031500)
+  const middleRaw = parts.length >= 3 ? parts[1] : '';
+  const teams = middleRaw.length > 11 ? middleRaw.slice(11) : '';
+  if (label) {
+    return teams ? `${label}: ${suffix} (${teams})` : `${label}: ${suffix}`;
+  }
+  // Generic fallback: just show series + suffix
+  return `${series}: ${suffix}`;
+}
+
+// In-memory cache: event_ticker -> web slug (e.g. 'kxbtcd-26apr0321' -> 'bitcoin-price-abovebelow')
+const eventSlugCache = {};
+
+function slugify(str) {
+  // Convert a human title to a URL slug: lowercase, replace spaces+special with hyphens, collapse
+  return (str || '')
+    .toLowerCase()
+    .replace(/[/\\|]/g, '-')   // slashes become hyphens
+    .replace(/[^a-z0-9-]/g, '-') // anything else non-alphanumeric becomes hyphen
+    .replace(/-+/g, '-')         // collapse consecutive hyphens
+    .replace(/^-|-$/g, '');      // trim leading/trailing hyphens
+}
+
+// Known series -> web slug map (covers most common series without an extra API call)
+const SERIES_WEB_SLUGS = {
+  'KXBTCD':      'bitcoin-price-abovebelow',
+  'KXBTC15M':    'bitcoin-price-abovebelow',
+  'KXBTC1H':     'bitcoin-price-abovebelow',
+  'KXBTC':       'bitcoin-price-abovebelow',
+  'KXETHD':      'ethereum-price-abovebelow',
+  'KXETH':       'ethereum-price-abovebelow',
+  'KXSOLD':      'solana-price-abovebelow',
+  'KXSOL':       'solana-price-abovebelow',
+  'KXPRESNOMR':  'republican-primary-winner',
+  'KXPRESNOMD':  'democratic-primary-winner',
+  'KXPRES':      'presidential-election-winner',
+  'KXSENATE':    'senate-race',
+  'KXHOUSE':     'house-race',
+  'KXGOV':       'governor-race',
+  'KXFED':       'fed-rate-decision',
+  'KXCPI':       'cpi-report',
+  'KXJOBS':      'jobs-report',
+  'KXGDP':       'gdp-report',
+  'KXNBAGAME':   'nba-game-winner',
+  'KXNBAPTS':    'nba-player-points',
+  'KXNBAREB':    'nba-player-rebounds',
+  'KXNBAAST':    'nba-player-assists',
+  'KXNBA3PT':    'nba-player-3-pointers',
+  'KXNBASPREAD': 'nba-spread',
+  'KXNBATOTAL':  'nba-total-points',
+  'KXWNBAGAME':  'wnba-game-winner',
+  'KXNHLGAME':   'nhl-game-winner',
+  'KXNHLTOTAL':  'nhl-total-goals',
+  'KXNFLGAME':   'nfl-game-winner',
+  'KXNFLSPREAD': 'nfl-spread',
+  'KXNFLTOTAL':  'nfl-total-points',
+  'KXMLBGAME':   'mlb-game-winner',
+  'KXMLBTOTAL':  'mlb-total-runs',
+  'KXMLBSPREAD': 'mlb-run-line',
+  'KXMLBPTS':    'mlb-player-props',
+  'KXCS2GAME':   'cs2-match-winner',
+  'KXCS2SERIES': 'cs2-series-winner',
+  'KXLOLGAME':   'league-of-legends-match-winner',
+  'KXDOTA2GAME': 'dota-2-match-winner',
+  'KXSOCGAME':   'soccer-match-winner',
+  'KXMLSGAME':   'mls-match-winner',
+  'KXWTAMATCH':  'wta-match-winner',
+  'KXATPMATCH':  'atp-match-winner',
+  'KXNCAABBGAME':'ncaa-basketball-game-winner',
+  'KXTEMPNYCH':  'new-york-city-temperature',
+  'KXTEMPSFO':   'san-francisco-temperature',
+  'KXTEMPCHI':   'chicago-temperature',
+  'KXTEMPLA':    'los-angeles-temperature',
+  'KXMVESPORTSMULTIGAME': 'multi-game-parlay',
+  'KXMVESPORTSMULTIGAMEEXTENDED': 'multi-game-parlay-extended',
+  'KXMVENBA':    'nba-multi-market',
+  'KXMVEMLB':    'mlb-multi-market',
+};
+
+function buildKalshiUrl(ticker, eventTicker, eventSlug) {
+  // URL format: kalshi.com/markets/{series}/{event-slug}/{event-ticker-lower}
+  // eventTicker (e.g. KXBTCD-26APR0321) is already the stripped ticker for the URL
+  // eventSlug is the human-readable middle segment (e.g. bitcoin-price-abovebelow)
+  const evTk = eventTicker || ticker || '';
+  const series = evTk.split('-')[0].toLowerCase();
+  // The URL uses event_ticker (not market ticker) — it's the market ticker without price suffixes
+  const urlTicker = evTk.toLowerCase();
+  if (!series || !urlTicker) return 'https://kalshi.com/markets';
+
+  // Resolve slug: prefer passed-in slug, then runtime cache, then SERIES_WEB_SLUGS map
+  const slug = eventSlug
+    || eventSlugCache[evTk.toUpperCase()]
+    || eventSlugCache[series.toUpperCase()]
+    || SERIES_WEB_SLUGS[series.toUpperCase()]
+    || null;
+
+  if (slug) {
+    return `https://kalshi.com/markets/${series}/${slug}/${urlTicker}`;
+  }
+  // Fallback: 2-part URL (will still work for most markets as Kalshi sometimes accepts it)
+  return `https://kalshi.com/markets/${series}/${urlTicker}`;
+}
+
+function detectCategory(title) {
+  const t = (title || '').toLowerCase();
+  if (/bitcoin|btc|eth|crypto|coin|sol|doge/.test(t)) return 'Crypto';
+  if (/trump|biden|election|senate|congress|president|vote|poll/.test(t)) return 'Politics';
+  if (/russia|ukraine|iran|war|military|ceasefire|nato|china/.test(t)) return 'Geopolitics';
+  if (/fed|rate|inflation|gdp|economy|tariff|recession|jobs/.test(t)) return 'Economy';
+  if (/nba|nfl|nhl|mlb|soccer|sports|game|championship|score|runs/.test(t)) return 'Sports';
+  if (/temperature|hurricane|tornado|earthquake|storm/.test(t)) return 'Climate';
+  if (/ai|spacex|nasa|tech|ipo|merger/.test(t)) return 'Tech';
+  return 'Other';
+}
+
+/* ============================================================
+   ANOMALY SCORING ENGINE
+   ============================================================ */
+
+async function scoreMarketTrades(market, trades) {
+  if (!trades || trades.length < 2) return null;
+
+  const now = Date.now();
+  const closeMs = market.close_time ? new Date(market.close_time).getTime() : (now + 30 * 86400000);
+  const hoursToClose = Math.max(0, (closeMs - now) / 3600000);
+
+  const counts    = trades.map(t => parseFloat(t.count_fp) || 0);
+  const yesPrices = trades.map(t => parseFloat(t.yes_price_dollars) || 0);
+  const totalContracts  = counts.reduce((a, b) => a + b, 0);
+  const avgYesPrice     = yesPrices.reduce((a, b) => a + b, 0) / yesPrices.length;
+  const maxSingleTrade  = Math.max(...counts);
+  const openInterest    = parseFloat(market.open_interest_fp) || 1;
+  const yesTrades       = trades.filter(t => t.taker_side === 'yes').length;
+  const uniformity      = Math.abs(yesTrades / trades.length - 0.5) * 2;
+
+  // Layer 1: Volume spike (28%)
+  const volumeRatio = totalContracts / Math.max(openInterest, 1);
+  const volumeScore = Math.min(100, Math.round(volumeRatio * 200));
+
+  // Layer 2: Single-trade dominance (18%)
+  const dominance      = maxSingleTrade / Math.max(totalContracts, 1);
+  const dominanceScore = Math.min(100, Math.round(dominance * 120));
+
+  // Layer 3: Price dislocation (23%)
+  const priceDev   = Math.abs(avgYesPrice - 0.5);
+  const priceScore = Math.min(100, Math.round(priceDev * 300));
+
+  // Layer 4: Timing (13%)
+  const timingScore = hoursToClose < 6
+    ? Math.min(100, Math.round((6 - hoursToClose) / 6 * 100))
+    : hoursToClose < 48 ? Math.max(0, Math.round(35 - hoursToClose * 0.5))
+    : 8;
+
+  // Layer 5: Directional uniformity (10%)
+  const uniformityScore = Math.min(100, Math.round(uniformity * 100));
+
+  // Layer 6: Orderbook imbalance (8%) — fetch asynchronously
+  let obImbalanceScore = 0;
+  let obImbalance = 0;
+  try {
+    const obCacheKey = 'ob_' + market.ticker;
+    let obData = null;
+    const obCached = sessionStorage.getItem(obCacheKey);
+    if (obCached) {
+      const parsed = JSON.parse(obCached);
+      if (Date.now() - parsed.ts < 120000) obData = parsed.data; // 2-min cache
+    }
+    if (!obData) {
+      const obUrl = BASE_URL + '/markets/' + market.ticker + '/orderbook';
+      const raw = await fetchWithProxyFallback(obUrl, 4000);
+      if (raw && raw.orderbook_fp) {
+        obData = raw.orderbook_fp;
+        sessionStorage.setItem(obCacheKey, JSON.stringify({ ts: Date.now(), data: obData }));
+      }
+    }
+    if (obData) {
+      const yesDepth = (obData.yes_dollars || []).reduce((s, [, c]) => s + parseFloat(c||0), 0);
+      const noDepth  = (obData.no_dollars  || []).reduce((s, [, c]) => s + parseFloat(c||0), 0);
+      const total = yesDepth + noDepth;
+      if (total > 0) {
+        obImbalance = yesDepth / total; // 0=all NO depth, 1=all YES depth
+        // Score = how much orderbook agrees with taker direction
+        const dominantYes = yesTrades >= trades.length / 2;
+        const obAgreement = dominantYes ? obImbalance : (1 - obImbalance);
+        // Only score if imbalance is meaningful (>60/40 split)
+        obImbalanceScore = obAgreement > 0.6 ? Math.min(100, Math.round((obAgreement - 0.5) * 200)) : 0;
+      }
+    }
+  } catch(e) {}
+
+  const layers = [volumeScore, dominanceScore, priceScore, timingScore, uniformityScore, obImbalanceScore];
+  const composite = Math.round(
+    volumeScore       * 0.28 +
+    dominanceScore    * 0.18 +
+    priceScore        * 0.23 +
+    timingScore       * 0.13 +
+    uniformityScore   * 0.10 +
+    obImbalanceScore  * 0.08
+  );
+
+  // Pattern detection (bonus capped at 12)
+  const patternIds = [];
+  if (hoursToClose < 6 && uniformity > 0.7) patternIds.push('jit');
+  if (dominance > 0.5) patternIds.push('whale');
+  if (priceDev > 0.2 && volumeRatio > 0.05) patternIds.push('pi');
+  if (obImbalanceScore > 60) patternIds.push('obi');
+  // Pre-close sweep: large single trade within 1h of close
+  if (hoursToClose < 1 && dominance > 0.4) patternIds.push('sweep');
+  const bonus = Math.min(12, patternIds.length * 4);
+  const finalScore = Math.min(99, composite + bonus);
+
+  // CATEGORY-SPECIFIC GATES (calibrated from historical data)
+  // Weather/price markets need higher gate (more noise, lower accuracy at same score)
+  const cat = (market.category || detectCategory(market.title || '')).toLowerCase();
+  let gate = 65; // default
+  if (['crypto', 'economy'].includes(cat)) gate = 70;       // high noise categories
+  if (['politics', 'geopolitics'].includes(cat)) gate = 63; // higher directional signal
+  if (['sports'].includes(cat)) gate = 65;                   // baseline
+  if (['climate', 'other'].includes(cat)) gate = 72;         // most noise
+
+  const layersOver40 = layers.filter(l => l > 40).length;
+  if (finalScore < gate || layersOver40 < 3) return null;
+
+  const dominantSide = yesTrades >= trades.length / 2 ? 'YES' : 'NO';
+  const sidePrice = dominantSide === 'YES'
+    ? Math.round(avgYesPrice * 100)
+    : Math.round((1 - avgYesPrice) * 100);
+
+  return {
+    id: 'kflag_' + market.ticker + '_' + Date.now(),
+    ticker: market.ticker,
+    eventTicker: market.event_ticker || '',
+    title: market.title || decodeTicker(market.ticker),
+    category: market.category || detectCategory(market.title || market.ticker || ''),
+    side: dominantSide,
+    sidePrice,
+    avgYesPrice,
+    totalContracts,
+    maxSingleTrade,
+    liquidity: parseFloat(market.liquidity_dollars) || 0,
+    openInterest,
+    obImbalance: Math.round(obImbalance * 100), // % YES book depth
+    score: finalScore,
+    gate,
+    scoreBreakdown: {
+      volume: volumeScore, dominance: dominanceScore, price: priceScore,
+      timing: timingScore, uniformity: uniformityScore, orderbook: obImbalanceScore
+    },
+    patternIds,
+    closeTime: market.close_time || null,
+    hoursToClose,
+    tradeCount: trades.length,
+    volume24h: parseFloat(market.volume_24h_fp) || 0,
+    trades: trades.slice(0, 20),
+    timestamp: Date.now(),
+    kalshiUrl: buildKalshiUrl(market.ticker, market.event_ticker, market._eventSlug || null),
+    outcome: null, // filled in by outcome log when market resolves
+  };
+}
+
+/* ============================================================
+   LIVE FEED LOGIC
+   ============================================================ */
+
+async function manualRefresh() {
+  if (scanPaused) { showToast('Auto-refresh is paused'); return; }
+  setRefreshState(true);
+  try {
+    const apiUrl = BASE_URL + '/markets/trades?limit=200';
+    const data = await fetchWithProxyFallback(apiUrl);
+    if (!data || !data.trades || !data.trades.length) {
+      showToast('No trade data returned from API', 'error');
+      setRefreshState(false);
+      return;
+    }
+    await processTradeBatch(data.trades);
+  } catch(e) {
+    showToast('Feed error: ' + e.message, 'error');
+  }
+  setRefreshState(false);
+  resetCountdown();
+}
+
+async function processTradeBatch(trades) {
+  // Group trades by ticker
+  const byTicker = {};
+  trades.forEach(t => {
+    if (!byTicker[t.ticker]) byTicker[t.ticker] = [];
+    byTicker[t.ticker].push(t);
+  });
+
+  // Fetch market data for uncached tickers
+  const unknownTickers = [];
+  for (const tk of Object.keys(byTicker)) {
+    const cached = await getMarketFromCache(tk);
+    if (!cached) unknownTickers.push(tk);
+    else marketsScanned++;
+  }
+  const chunks = [];
+  for (let i = 0; i < unknownTickers.length; i += 5) chunks.push(unknownTickers.slice(i, i + 5));
+  for (const chunk of chunks) {
+    await Promise.all(chunk.map(async tk => {
+      try {
+        const url = BASE_URL + '/markets/' + tk;
+        const data = await fetchWithProxyFallback(url, 5000);
+        if (data && data.market) {
+          const m = data.market;
+          const seriesKey = tk.split('-')[0].toUpperCase();
+          const evTk = (m.event_ticker || '').toUpperCase();
+          // Fetch event to get title for slug derivation (if not already in static map or cache)
+          const needsEventFetch = m.event_ticker && (
+            tk.toUpperCase().includes('MULTIGAME') ||
+            (!SERIES_WEB_SLUGS[seriesKey] && !eventSlugCache[evTk] && !eventSlugCache[seriesKey])
+          );
+          if (needsEventFetch) {
+            try {
+              const evData = await fetchWithProxyFallback(BASE_URL + '/events/' + m.event_ticker, 5000);
+              if (evData && evData.event) {
+                const ev = evData.event;
+                if (ev.title && !m.title) m.title = ev.title;
+                // Derive slug from event title and cache it by both event_ticker and series
+                const derivedSlug = slugify(ev.title || '');
+                if (derivedSlug) {
+                  eventSlugCache[evTk] = derivedSlug;
+                  eventSlugCache[seriesKey] = derivedSlug;
+                  m._eventSlug = derivedSlug;
+                }
+              }
+            } catch(e) {}
+          } else if (SERIES_WEB_SLUGS[seriesKey]) {
+            // Stamp the known static slug onto the market object for buildKalshiUrl
+            m._eventSlug = SERIES_WEB_SLUGS[seriesKey];
+          } else if (eventSlugCache[evTk] || eventSlugCache[seriesKey]) {
+            m._eventSlug = eventSlugCache[evTk] || eventSlugCache[seriesKey];
+          }
+          putMarketInCache(tk, m);
+          marketsScanned++;
+        }
+      } catch(e) {}
+    }));
+  }
+
+  let newFlags = 0;
+  for (const [ticker, tkTrades] of Object.entries(byTicker)) {
+    const market = (await getMarketFromCache(ticker)) || { ticker, title: decodeTicker(ticker), event_ticker: ticker };
+    const flag = await scoreMarketTrades(market, tkTrades); // now async for orderbook fetch
+    if (flag) {
+      const existing = sessionFlags.find(f => f.ticker === ticker && (Date.now() - f.timestamp) < 3600000);
+      if (!existing) {
+        sessionFlags.unshift(flag);
+        saveFlag(flag);
+        updateTraderProfiles(flag);
+        newFlags++;
+      }
+    }
+  }
+
+  if (newFlags > 0) {
+    renderFlags();
+    updateStats();
+    updatePatternCounters();
+    if (chartsInitialized) updateCharts();
+    showToast(newFlags + ' new flag' + (newFlags > 1 ? 's' : '') + ' detected', 'success');
+  } else {
+    updateStats();
+  }
+}
+
+function setRefreshState(loading) {
+  const btn = document.getElementById('refreshBtn');
+  const spinner = document.getElementById('refreshSpinner');
+  btn.disabled = loading;
+  if (loading) {
+    spinner.classList.add('active');
+    btn.textContent = 'Scanning...';
+  } else {
+    spinner.classList.remove('active');
+    btn.textContent = '↻ Refresh';
+  }
+}
+
+/* ============================================================
+   COUNTDOWN TIMER
+   ============================================================ */
+
+function startCountdown() {
+  clearInterval(countdownTimer);
+  countdownVal = refreshInterval;
+  updateCountdownDisplay();
+  countdownTimer = setInterval(() => {
+    if (scanPaused) return;
+    countdownVal--;
+    if (countdownVal <= 0) {
+      countdownVal = refreshInterval;
+      manualRefresh();
+    }
+    updateCountdownDisplay();
+  }, 1000);
+}
+
+function resetCountdown() {
+  countdownVal = refreshInterval;
+  updateCountdownDisplay();
+}
+
+function updateCountdownDisplay() {
+  document.getElementById('countdown').textContent = countdownVal + 's';
+}
+
+function togglePause() {
+  scanPaused = !scanPaused;
+  const btn = document.getElementById('pauseBtn');
+  btn.textContent = scanPaused ? '▶ Resume' : '⏸ Pause';
+  btn.style.color = scanPaused ? 'var(--yellow)' : '';
+  showToast(scanPaused ? 'Auto-refresh paused' : 'Auto-refresh resumed');
+}
+
+/* ============================================================
+   SESSION TIMER
+   ============================================================ */
+
+function startSessionTimer() {
+  setInterval(() => {
+    const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+    const m = Math.floor(elapsed / 60);
+    const s = elapsed % 60;
+    document.getElementById('statTime').textContent = m + ':' + String(s).padStart(2, '0');
+  }, 1000);
+}
+
+/* ============================================================
+   STATS & PATTERN COUNTERS
+   ============================================================ */
+
+function updateStats() {
+  document.getElementById('statFlags').textContent = sessionFlags.length;
+  document.getElementById('statScanned').textContent = marketsScanned;
+  const patCount = sessionFlags.reduce((a, f) => a + (f.patternIds ? f.patternIds.length : 0), 0);
+  document.getElementById('statPatterns').textContent = patCount;
+}
+
+function updatePatternCounters() {
+  const counts = { jit: 0, whale: 0, pi: 0, obi: 0, sweep: 0 };
+  sessionFlags.forEach(f => {
+    (f.patternIds || []).forEach(pid => { if (counts[pid] !== undefined) counts[pid]++; });
+  });
+  document.getElementById('pn-jit').textContent = counts.jit;
+  document.getElementById('pn-whale').textContent = counts.whale;
+  document.getElementById('pn-pi').textContent = counts.pi;
+  const obEl = document.getElementById('pn-obi');
+  if (obEl) obEl.textContent = counts.obi;
+  const swEl = document.getElementById('pn-sweep');
+  if (swEl) swEl.textContent = counts.sweep;
+}
+
+/* ============================================================
+   FILTER LOGIC
+   ============================================================ */
+
+function setCat(cat) {
+  activeFilter = cat;
+  document.querySelectorAll('#catPills .pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.cat === cat);
+  });
+  renderFlags();
+}
+
+function onSliderChange() {
+  scoreThreshold = parseInt(document.getElementById('scoreSlider').value);
+  contractsThreshold = parseInt(document.getElementById('contractsSlider').value);
+  document.getElementById('scoreSliderVal').textContent = scoreThreshold;
+  document.getElementById('contractsSliderVal').textContent = contractsThreshold;
+  renderFlags();
+}
+
+function getFilteredFlags() {
+  return sessionFlags.filter(f => {
+    if (activeFilter !== 'ALL' && f.category !== activeFilter) return false;
+    if (f.score < scoreThreshold) return false;
+    if (f.totalContracts < contractsThreshold) return false;
+    return true;
+  });
+}
+
+/* ============================================================
+   FLAG RENDERING
+   ============================================================ */
+
+function renderFlags() {
+  const grid = document.getElementById('flagGrid');
+  const filtered = getFilteredFlags();
+  document.getElementById('flagCountBadge').textContent = filtered.length;
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1;">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="20" stroke="#5a5450" stroke-width="2"/>
+          <path d="M24 14v12M24 30v4" stroke="#5a5450" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <p>${sessionFlags.length === 0 ? 'No anomaly flags yet' : 'No flags match filters'}</p>
+        <span class="hint">${sessionFlags.length === 0 ? 'Click Refresh to scan the Kalshi trade feed.' : 'Try lowering the score threshold or changing the category filter.'}</span>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(flag => renderFlagCard(flag)).join('');
+}
+
+function scoreBadgeClass(score) {
+  if (score >= 90) return 'high';
+  if (score >= 75) return 'mid';
+  return 'low';
+}
+
+function scoreCardClass(score) {
+  if (score >= 90) return 'score-high';
+  if (score >= 75) return 'score-mid';
+  return 'score-low';
+}
+
+function renderPatternPills(patternIds) {
+  if (!patternIds || !patternIds.length) return '';
+  return patternIds.map(pid => {
+    const def = PATTERN_DEFS.find(d => d.id === pid);
+    return `<span class="badge pattern ${pid}" title="${def ? def.desc : ''}">${def ? def.name : pid}</span>`;
+  }).join('');
+}
+
+function formatTimeAgo(ts) {
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 60) return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  return Math.floor(diff / 3600) + 'h ago';
+}
+
+function formatHoursToClose(h) {
+  if (h < 0.1) return '< 6m';
+  if (h < 1) return Math.round(h * 60) + 'm';
+  if (h < 48) return h.toFixed(1) + 'h';
+  return Math.floor(h / 24) + 'd';
+}
+
+function renderFlagCard(flag) {
+  const cls = scoreBadgeClass(flag.score);
+  const cardCls = scoreCardClass(flag.score);
+  const isSelected = flag.id === selectedFlagId;
+  return `
+    <div class="flag-card ${cardCls}${isSelected ? ' selected' : ''}" onclick="openDrillPanel('${flag.id}')" data-flag-id="${flag.id}">
+      <div class="card-top">
+        <div class="score-badge ${cls}">${flag.score}</div>
+        <div class="card-meta">
+          <div class="card-title" title="${escHtml(flag.title)}">${escHtml(truncate(flag.title, 72))}</div>
+          <div class="card-badges">
+            <span class="badge cat">${escHtml(flag.category)}</span>
+            <span class="badge side-${flag.side.toLowerCase()}">${flag.side} @ ${flag.sidePrice}&cent;</span>
+            ${renderPatternPills(flag.patternIds)}
+          </div>
+        </div>
+      </div>
+      <div class="card-stats">
+        <div class="stat-mini">
+          <span class="stat-mini-label">Contracts</span>
+          <span class="stat-mini-val">${fmtNum(flag.totalContracts)}</span>
+        </div>
+        <div class="stat-mini">
+          <span class="stat-mini-label">Closes In</span>
+          <span class="stat-mini-val">${formatHoursToClose(flag.hoursToClose)}</span>
+        </div>
+        <div class="stat-mini">
+          <span class="stat-mini-label">Open Interest</span>
+          <span class="stat-mini-val">${fmtNum(flag.openInterest)}</span>
+        </div>
+        <div class="stat-mini">
+          <span class="stat-mini-label">Liquidity</span>
+          <span class="stat-mini-val">$${fmtNum(flag.liquidity, 0)}</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="time-ago">${formatTimeAgo(flag.timestamp)}</span>
+        <button class="btn sm" onclick="event.stopPropagation(); openDrillPanel('${flag.id}')">View Trades</button>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   DRILL-DOWN PANEL
+   ============================================================ */
+
+function openDrillPanel(flagId) {
+  const flag = sessionFlags.find(f => f.id === flagId);
+  if (!flag) return;
+  selectedFlagId = flagId;
+
+  // Update card selection
+  document.querySelectorAll('.flag-card').forEach(c => {
+    c.classList.toggle('selected', c.dataset.flagId === flagId);
+  });
+
+  const panel = document.getElementById('drillPanel');
+  document.getElementById('drillTitle').textContent = truncate(flag.title, 50);
+  document.getElementById('drillBody').innerHTML = buildDrillBodyLoading();
+  panel.classList.add('open');
+  document.getElementById('leftCol').classList.add('panel-open');
+
+  loadTradeDrillDown(flag, document.getElementById('drillBody'));
+}
+
+function closeDrillPanel() {
+  document.getElementById('drillPanel').classList.remove('open');
+  document.getElementById('leftCol').classList.remove('panel-open');
+  selectedFlagId = null;
+  document.querySelectorAll('.flag-card').forEach(c => c.classList.remove('selected'));
+}
+
+function buildDrillBodyLoading() {
+  return `<div style="display:flex;align-items:center;justify-content:center;padding:40px 0;gap:10px;color:var(--text-3);">
+    <div class="spinner active" style="display:block;"></div>
+    <span style="font-size:0.82rem;">Loading trade data&hellip;</span>
+  </div>`;
+}
+
+async function loadTradeDrillDown(flag, bodyEl) {
+  let trades = flag.trades || [];
+  let source = 'session';
+
+  const cacheKey = 'kt_' + flag.ticker;
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached) {
+    try { trades = JSON.parse(cached); source = 'cached'; } catch(e) {}
+  } else {
+    const url = BASE_URL + '/markets/trades?ticker=' + encodeURIComponent(flag.ticker) + '&limit=50';
+    const data = await fetchWithProxyFallback(url, 7000);
+    if (data && data.trades && data.trades.length > 0) {
+      trades = data.trades;
+      source = 'live';
+      sessionStorage.setItem(cacheKey, JSON.stringify(trades));
+    }
+  }
+  renderTradeDrillPanel(flag, trades, source, bodyEl);
+}
+
+function renderTradeDrillPanel(flag, trades, source, bodyEl) {
+  const isLive = source === 'live';
+  const closeStr = flag.closeTime ? new Date(flag.closeTime).toLocaleString() : 'Unknown';
+
+  bodyEl.innerHTML = `
+    <!-- SCORE SUMMARY -->
+    <div class="drill-section">
+      <div class="drill-section-title">Anomaly Score &mdash; ${flag.score}</div>
+      <div class="score-bars">
+        ${buildScoreBar('Volume',        flag.scoreBreakdown.volume)}
+        ${buildScoreBar('Dominance',     flag.scoreBreakdown.dominance)}
+        ${buildScoreBar('Price Dev',     flag.scoreBreakdown.price)}
+        ${buildScoreBar('Book Imbalance',flag.scoreBreakdown.orderbook || 0)}
+        ${buildScoreBar('Timing',        flag.scoreBreakdown.timing)}
+        ${buildScoreBar('Uniformity',    flag.scoreBreakdown.uniformity)}
+      </div>
+      ${flag.patternIds && flag.patternIds.length ? `
+      <div style="margin-top:10px;display:flex;gap:5px;flex-wrap:wrap;">
+        ${renderPatternPills(flag.patternIds)}
+      </div>` : ''}
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- EMULATE BET -->
+    <div class="drill-section">
+      <div class="drill-section-title">Emulate This Bet</div>
+      <div class="emulate-box">
+        <div class="emulate-row">
+          <span class="emulate-label">Direction</span>
+          <span class="emulate-val ${flag.side === 'YES' ? 'color-green' : 'color-red'}">${flag.side}</span>
+        </div>
+        <div class="emulate-row">
+          <span class="emulate-label">Price</span>
+          <span class="emulate-val">${flag.sidePrice}&cent;</span>
+        </div>
+        <div class="emulate-row">
+          <span class="emulate-label">Contracts (batch)</span>
+          <span class="emulate-val">${fmtNum(flag.totalContracts)}</span>
+        </div>
+        <div class="emulate-row">
+          <span class="emulate-label">Avg YES Price</span>
+          <span class="emulate-val">${Math.round(flag.avgYesPrice * 100)}&cent;</span>
+        </div>
+        <a class="kalshi-link" href="${flag.kalshiUrl}" target="_blank" rel="noopener">
+          Open on Kalshi &rarr;
+        </a>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- TRADE HISTORY -->
+    <div class="drill-section">
+      <div class="drill-section-title">
+        <div class="live-dot ${isLive ? '' : 'grey'}"></div>
+        Trade History
+        <span style="color:var(--text-4);font-size:0.66rem;font-weight:400;">${isLive ? 'live data' : source === 'cached' ? 'cached' : 'session data'}</span>
+      </div>
+      ${trades.length > 0 ? `
+      <div style="overflow-x:auto;">
+        <table class="trade-table">
+          <thead>
+            <tr>
+              <th>Count</th>
+              <th>Side</th>
+              <th>YES Price</th>
+              <th>Time</th>
+              <th>Trade ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${trades.slice(0, 30).map(t => renderTradeRow(t)).join('')}
+          </tbody>
+        </table>
+      </div>` : `<div class="no-results">No trade data available.</div>`}
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- MARKET INFO -->
+    <div class="drill-section">
+      <div class="drill-section-title">Market Info</div>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-item-label">Ticker</span>
+          <span class="info-item-val copyable mono" onclick="copyText('${escHtml(flag.ticker)}')" title="Click to copy">${escHtml(flag.ticker)}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-item-label">Category</span>
+          <span class="info-item-val">${escHtml(flag.category)}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-item-label">Closes</span>
+          <span class="info-item-val">${closeStr}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-item-label">Hours to Close</span>
+          <span class="info-item-val">${formatHoursToClose(flag.hoursToClose)}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-item-label">Open Interest</span>
+          <span class="info-item-val">${fmtNum(flag.openInterest)}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-item-label">24h Volume</span>
+          <span class="info-item-val">${fmtNum(flag.volume24h || 0)}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-item-label">Liquidity</span>
+          <span class="info-item-val">$${fmtNum(flag.liquidity, 0)}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-item-label">Trade Count</span>
+          <span class="info-item-val">${flag.tradeCount}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-item-label">Book Depth</span>
+          <span class="info-item-val">${flag.obImbalance !== undefined ? flag.obImbalance + '% YES' : '&mdash;'}</span>
+        </div>
+      </div>
+      <a class="kalshi-link" href="${flag.kalshiUrl}" target="_blank" rel="noopener" style="margin-top:12px;">
+        View on Kalshi &rarr;
+      </a>
+    </div>
+  `;
+}
+
+function buildScoreBar(label, val) {
+  const color = val >= 70 ? '#d4849a' : val >= 45 ? '#e8b96a' : '#5c9ea0';
+  return `
+    <div class="score-row">
+      <span class="score-row-label">${label}</span>
+      <div class="score-bar-track">
+        <div class="score-bar-fill" style="width:${val}%;background:${color};"></div>
+      </div>
+      <span class="score-row-num">${val}</span>
+    </div>`;
+}
+
+function renderTradeRow(t) {
+  const count = parseFloat(t.count_fp) || 0;
+  const yesPrice = parseFloat(t.yes_price_dollars) || 0;
+  const side = (t.taker_side || '').toUpperCase();
+  const sideClass = side === 'YES' ? 'color-green' : 'color-red';
+  const timeAgo = t.created_time ? formatTradeTimeAgo(t.created_time) : '&mdash;';
+  const tradeId = (t.trade_id || '').substring(0, 12);
+  return `<tr>
+    <td>${fmtNum(count)}</td>
+    <td><span class="badge side-${side.toLowerCase()}" style="font-size:0.65rem;padding:1px 5px;">${side}</span></td>
+    <td>${Math.round(yesPrice * 100)}&cent;</td>
+    <td>${timeAgo}</td>
+    <td class="trade-id-cell" title="${escHtml(t.trade_id || '')}" onclick="copyText('${escHtml(t.trade_id || '')}')">${escHtml(tradeId)}&hellip;</td>
+  </tr>`;
+}
+
+function formatTradeTimeAgo(isoStr) {
+  try {
+    const diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
+    if (diff < 60) return diff + 's ago';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+  } catch(e) { return '&mdash;'; }
+}
+
+/* ============================================================
+   BACKSCRAPE
+   ============================================================ */
+
+bsStopped = false;
+
+async function runBackscrape() {
+  bsStopped = false;
+  const depth = parseInt(document.getElementById('bsDepth').value);
+  const minScore = parseInt(document.getElementById('bsMinScore').value);
+  const category = document.getElementById('bsCategory').value;
+
+  document.getElementById('bsRunBtn').disabled = true;
+  document.getElementById('bsStopBtn').style.display = 'inline-flex';
+  document.getElementById('bsProgress').style.display = 'flex';
+  document.getElementById('bsTableWrap').innerHTML = '<div class="no-results">Fetching open markets&hellip;</div>';
+
+  const results = [];
+  let markets = [];
+  let cursor = null;
+  let page = 0;
+
+  // Fetch open markets
+  while (markets.length < depth && !bsStopped) {
+    const url = BASE_URL + '/markets?status=open&limit=100' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '');
+    const data = await fetchWithProxyFallback(url, 8000);
+    if (!data || !data.markets || !data.markets.length) break;
+    markets = markets.concat(data.markets);
+    cursor = data.cursor;
+    if (!cursor || !data.cursor) break;
+    page++;
+    if (markets.length >= depth) { markets = markets.slice(0, depth); break; }
+  }
+
+  if (markets.length === 0) {
+    showToast('Could not fetch market list', 'error');
+    bsFinish();
+    return;
+  }
+
+  const total = markets.length;
+  let done = 0;
+
+  setBsProgress(0, total);
+  document.getElementById('bsTableWrap').innerHTML = '<div class="no-results">Analyzing ' + total + ' markets&hellip;</div>';
+
+  for (const market of markets) {
+    if (bsStopped) break;
+    try {
+      const cat = market.category || detectCategory(market.title || '');
+      if (category !== 'ALL' && cat !== category) {
+        done++;
+        setBsProgress(done, total);
+        continue;
+      }
+
+      const url = BASE_URL + '/markets/trades?ticker=' + encodeURIComponent(market.ticker) + '&limit=100';
+      const data = await fetchWithProxyFallback(url, 5000);
+      if (data && data.trades && data.trades.length >= 2) {
+        const enrichedMarket = Object.assign({}, market, {
+          category: cat
+        });
+        const flag = await scoreMarketTrades(enrichedMarket, data.trades);
+        if (flag && flag.score >= minScore) {
+          results.push(flag);
+          // sort by score descending
+          results.sort((a, b) => b.score - a.score);
+          renderBsTable(results);
+        }
+      }
+    } catch(e) {}
+    done++;
+    setBsProgress(done, total);
+    document.getElementById('scanSub').textContent = done + ' / ' + total + ' markets';
+  }
+
+  showToast('Backscrape complete: ' + results.length + ' flags found', results.length > 0 ? 'success' : '');
+  bsFinish();
+}
+
+function stopBackscrape() {
+  bsStopped = true;
+  bsFinish();
+  showToast('Backscrape stopped');
+}
+
+function bsFinish() {
+  document.getElementById('bsRunBtn').disabled = false;
+  document.getElementById('bsStopBtn').style.display = 'none';
+}
+
+function setBsProgress(done, total) {
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+  document.getElementById('bsProgressBar').style.width = pct + '%';
+  document.getElementById('bsProgressPct').textContent = pct + '%';
+  document.getElementById('bsProgressLabel').textContent = done + ' / ' + total + ' markets scanned';
+}
+
+function renderBsTable(results) {
+  if (results.length === 0) {
+    document.getElementById('bsTableWrap').innerHTML = '<div class="no-results">No flags found yet.</div>';
+    return;
+  }
+  const html = `
+    <table class="backscrape-table">
+      <thead>
+        <tr>
+          <th>Ticker</th>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Score</th>
+          <th>Side</th>
+          <th>Price</th>
+          <th>Contracts</th>
+          <th>Patterns</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${results.map(flag => `
+          <tr>
+            <td>${escHtml(flag.ticker)}</td>
+            <td title="${escHtml(flag.title)}">${escHtml(truncate(flag.title, 40))}</td>
+            <td>${escHtml(flag.category)}</td>
+            <td><span style="font-family:var(--font-mono);font-weight:600;color:${flag.score>=90?'var(--red)':flag.score>=75?'var(--orange)':'var(--yellow)'};">${flag.score}</span></td>
+            <td><span class="badge side-${flag.side.toLowerCase()}" style="font-size:0.68rem;">${flag.side}</span></td>
+            <td class="mono">${flag.sidePrice}&cent;</td>
+            <td class="mono">${fmtNum(flag.totalContracts)}</td>
+            <td>${(flag.patternIds||[]).map(pid => { const d = PATTERN_DEFS.find(x=>x.id===pid); return `<span class="badge pattern ${pid}" style="font-size:0.63rem;">${d?d.name:pid}</span>`; }).join(' ')}</td>
+            <td><button class="btn sm" onclick="importBsFlag(${JSON.stringify(JSON.stringify(flag))})">View</button></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+  document.getElementById('bsTableWrap').innerHTML = html;
+}
+
+function importBsFlag(flagJson) {
+  try {
+    const flag = JSON.parse(flagJson);
+    // Add to session flags if not already there
+    const exists = sessionFlags.find(f => f.ticker === flag.ticker);
+    if (!exists) {
+      sessionFlags.unshift(flag);
+      saveFlag(flag);
+      renderFlags();
+      updateStats();
+      updatePatternCounters();
+      if (chartsInitialized) updateCharts();
+    }
+    openDrillPanel(flag.id || (sessionFlags.find(f => f.ticker === flag.ticker) || {}).id);
+  } catch(e) { showToast('Could not import flag', 'error'); }
+}
+
+/* ============================================================
+   CHARTS
+   ============================================================ */
+
+function initCharts() {
+  if (chartsInitialized) return;
+
+  Chart.defaults.color = '#8a8078';
+  Chart.defaults.font.family = "'DM Sans', system-ui, sans-serif";
+  Chart.defaults.font.size = 11;
+
+  const gridColor = 'rgba(51,46,42,0.6)';
+  const baseOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { color: '#8a8078' } },
+      y: { grid: { color: gridColor }, ticks: { color: '#8a8078' }, beginAtZero: true }
+    }
+  };
+
+  // Timeline chart
+  const timeLabels = [];
+  const now = new Date();
+  for (let i = 11; i >= 0; i--) {
+    const h = new Date(now.getTime() - i * 3600000);
+    timeLabels.push(h.getHours() + ':00');
+  }
+  chartTimeline = new Chart(document.getElementById('chartTimeline').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: timeLabels,
+      datasets: [{
+        label: 'Flags',
+        data: new Array(12).fill(0),
+        borderColor: '#5c9ea0',
+        backgroundColor: 'rgba(92,158,160,0.12)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointBackgroundColor: '#5c9ea0',
+      }]
+    },
+    options: Object.assign({}, baseOpts)
+  });
+
+  // Category chart
+  chartCategory = new Chart(document.getElementById('chartCategory').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: MARKET_CATEGORIES,
+      datasets: [{
+        label: 'Flags',
+        data: new Array(MARKET_CATEGORIES.length).fill(0),
+        backgroundColor: [
+          'rgba(92,158,160,0.7)',
+          'rgba(232,185,106,0.7)',
+          'rgba(122,158,126,0.7)',
+          'rgba(212,132,154,0.7)',
+          'rgba(92,158,160,0.5)',
+          'rgba(122,158,126,0.5)',
+          'rgba(212,137,74,0.7)',
+          'rgba(90,84,80,0.7)',
+        ],
+        borderColor: 'transparent',
+        borderRadius: 4,
+      }]
+    },
+    options: Object.assign({}, baseOpts)
+  });
+
+  // Patterns doughnut
+  chartPatterns = new Chart(document.getElementById('chartPatterns').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: PATTERN_DEFS.map(d => d.name),
+      datasets: [{
+        data: PATTERN_DEFS.map(() => 0),
+        backgroundColor: PATTERN_DEFS.map(d => d.color + 'cc'),
+        borderColor: PATTERN_DEFS.map(d => d.color),
+        borderWidth: 1,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '60%',
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: { color: '#8a8078', boxWidth: 10, font: { size: 10 } }
+        }
+      }
+    }
+  });
+
+  chartsInitialized = true;
+}
+
+function updateCharts() {
+  if (!chartsInitialized) return;
+
+  // Timeline: count flags per hour bucket
+  const now = Date.now();
+  const buckets = new Array(12).fill(0);
+  sessionFlags.forEach(f => {
+    const ageSecs = (now - f.timestamp) / 1000;
+    const hrIdx = Math.floor(ageSecs / 3600);
+    if (hrIdx >= 0 && hrIdx < 12) buckets[11 - hrIdx]++;
+  });
+  chartTimeline.data.datasets[0].data = buckets;
+  chartTimeline.update('none');
+
+  // Category
+  const catCounts = {};
+  MARKET_CATEGORIES.forEach(c => catCounts[c] = 0);
+  sessionFlags.forEach(f => { if (catCounts[f.category] !== undefined) catCounts[f.category]++; });
+  chartCategory.data.datasets[0].data = MARKET_CATEGORIES.map(c => catCounts[c]);
+  chartCategory.update('none');
+
+  // Patterns
+  const patCounts = { jit: 0, whale: 0, pi: 0, obi: 0, sweep: 0 };
+  sessionFlags.forEach(f => (f.patternIds || []).forEach(pid => { if (patCounts[pid] !== undefined) patCounts[pid]++; }));
+  chartPatterns.data.datasets[0].data = PATTERN_DEFS.map(d => patCounts[d.id] || 0);
+  chartPatterns.update('none');
+}
+
+/* ============================================================
+   COLLAPSIBLE SECTIONS
+   ============================================================ */
+
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('expanded');
+  if (id === 'chartSection' && el.classList.contains('expanded') && !chartsInitialized) {
+    setTimeout(initCharts, 50);
+  }
+}
+
+/* ============================================================
+   INDEXEDDB PERSISTENCE
+   ============================================================ */
+
+function initDB() {
+  const req = indexedDB.open(DB_NAME, DB_VERSION);
+  req.onupgradeneeded = (e) => {
+    const database = e.target.result;
+    // Flags store (existing)
+    if (!database.objectStoreNames.contains(STORE_FLAGS)) {
+      database.createObjectStore(STORE_FLAGS, { keyPath: 'id' });
+    }
+    // Outcome log (new)
+    if (!database.objectStoreNames.contains(STORE_OUTCOMES)) {
+      const os = database.createObjectStore(STORE_OUTCOMES, { keyPath: 'flagId' });
+      os.createIndex('ticker', 'ticker', { unique: false });
+      os.createIndex('category', 'category', { unique: false });
+      os.createIndex('resolvedAt', 'resolvedAt', { unique: false });
+    }
+    // Persistent market cache (new)
+    if (!database.objectStoreNames.contains(STORE_MKTCACHE)) {
+      const os = database.createObjectStore(STORE_MKTCACHE, { keyPath: 'ticker' });
+      os.createIndex('cachedAt', 'cachedAt', { unique: false });
+    }
+    // Trader profiles (new)
+    if (!database.objectStoreNames.contains(STORE_TRADERS)) {
+      database.createObjectStore(STORE_TRADERS, { keyPath: 'profileId' });
+    }
+  };
+  req.onsuccess = (e) => {
+    db = e.target.result;
+    document.getElementById('dbDot').classList.add('ok');
+    loadMarketCacheFromDB()
+      .then(() => loadStoredFlagsAsync())
+      .then(() => loadOutcomeSummary())
+      .then(() => loadTraderProfiles())
+      .then(() => checkAndLogOutcomes()); // check if any existing flags have resolved
+  };
+  req.onerror = () => {
+    document.getElementById('dbDot').classList.add('error');
+    showToast('IndexedDB unavailable', 'error');
+  };
+}
+
+function saveFlag(flag) {
+  if (!db) return;
+  try {
+    const tx = db.transaction(STORE_FLAGS, 'readwrite');
+    tx.objectStore(STORE_FLAGS).put(flag);
+  } catch(e) {}
+}
+
+function loadStoredFlagsAsync() {
+  if (!db) return Promise.resolve();
+  return new Promise(resolve => {
+    try {
+      const tx = db.transaction(STORE_FLAGS, 'readonly');
+      const req = tx.objectStore(STORE_FLAGS).getAll();
+      req.onsuccess = async () => {
+        const stored = (req.result || []).filter(f => (Date.now() - f.timestamp) < 24 * 3600 * 1000);
+        stored.forEach(f => {
+          if (!sessionFlags.find(sf => sf.id === f.id)) sessionFlags.push(f);
+        });
+        sessionFlags.sort((a, b) => b.timestamp - a.timestamp);
+        if (sessionFlags.length > 0) {
+          renderFlags();
+          updateStats();
+          updatePatternCounters();
+          if (chartsInitialized) updateCharts();
+        }
+        // Retroactively fix titles that are still raw tickers (no spaces = decoded fallback)
+        retroactivelyFixTitles(stored);
+        resolve();
+      };
+      req.onerror = () => resolve();
+    } catch(e) { resolve(); }
+  });
+}
+
+// Kept for backward compatibility with any direct calls
+function loadStoredFlags() {
+  loadStoredFlagsAsync();
+}
+
+// Re-fetch market detail for any stored flag whose title has no spaces
+// (indicates it was stored with a decoded-ticker fallback, not the real API title)
+async function retroactivelyFixTitles(flags) {
+  // Fix flags whose title has no spaces (decoded ticker fallback) OR whose
+  // kalshiUrl is a 2-part path (series/ticker) instead of 3-part (series/slug/ticker)
+  const needsUpdate = flags.filter(f => {
+    if (!f.ticker) return false;
+    const titleBad = f.title && !f.title.includes(' ');
+    // 2-part URL: path segments after domain = ['markets', series, ticker] (length 3)
+    // 3-part URL: ['markets', series, slug, ticker] (length 4)
+    const urlBad = f.kalshiUrl && f.kalshiUrl.split('/').length < 7; // https://kalshi.com/markets/s/slug/t = 7 parts
+    return titleBad || urlBad;
+  });
+  if (!needsUpdate.length) return;
+  for (const flag of needsUpdate) {
+    try {
+      const seriesKey = flag.ticker.split('-')[0].toUpperCase();
+      const evTk = (flag.eventTicker || '').toUpperCase();
+      const isParlay = flag.ticker.toLowerCase().includes('multigame');
+      let realTitle = null;
+      let resolvedSlug = eventSlugCache[evTk] || eventSlugCache[seriesKey] || SERIES_WEB_SLUGS[seriesKey] || null;
+
+      // For parlays or unknown series, fetch the event to get its title + derive slug
+      if (isParlay || (!resolvedSlug && flag.eventTicker)) {
+        try {
+          const evUrl = `${BASE_URL}/events/${flag.eventTicker}`;
+          const evData = await fetchWithProxyFallback(evUrl, 5000);
+          if (evData && evData.event) {
+            const ev = evData.event;
+            if (ev.title) { realTitle = ev.title; }
+            const derivedSlug = slugify(ev.title || '');
+            if (derivedSlug) {
+              eventSlugCache[evTk] = derivedSlug;
+              eventSlugCache[seriesKey] = derivedSlug;
+              resolvedSlug = derivedSlug;
+            }
+          }
+        } catch(e) {}
+      }
+
+      // Fetch market detail if still no real title
+      if (!realTitle) {
+        const mUrl = `${BASE_URL}/markets/${flag.ticker}`;
+        const mData = await fetchWithProxyFallback(mUrl, 5000);
+        realTitle = mData && mData.market && mData.market.title ? mData.market.title : null;
+        if (mData && mData.market) putMarketInCache(flag.ticker, mData.market);
+      }
+
+      let changed = false;
+      if (realTitle && realTitle !== flag.title) {
+        flag.title = realTitle;
+        changed = true;
+      }
+      // Rebuild URL with the best available slug
+      const newUrl = buildKalshiUrl(flag.ticker, flag.eventTicker, resolvedSlug);
+      if (newUrl !== flag.kalshiUrl) {
+        flag.kalshiUrl = newUrl;
+        changed = true;
+      }
+      if (changed) saveFlag(flag);
+      await new Promise(r => setTimeout(r, 150)); // gentle rate limit
+    } catch(e) {}
+  }
+  // Re-render with corrected titles and URLs
+  if (needsUpdate.length > 0) {
+    renderFlags();
+  }
+}
+
+/* ============================================================
+   OUTCOME LOG
+   ============================================================ */
+
+async function checkAndLogOutcomes() {
+  // For each unresolved flag, check if the market has settled
+  const unresolved = sessionFlags.filter(f => f.outcome === null || f.outcome === undefined);
+  if (!unresolved.length) return;
+
+  for (const flag of unresolved) {
+    try {
+      const url = BASE_URL + '/markets/' + flag.ticker;
+      const data = await fetchWithProxyFallback(url, 5000);
+      if (!data || !data.market) continue;
+      const m = data.market;
+      putMarketInCache(flag.ticker, m);
+      if (m.result && m.result !== '') {
+        const correct = flag.side.toLowerCase() === m.result.toLowerCase();
+        const outcome = {
+          flagId: flag.id,
+          ticker: flag.ticker,
+          title: flag.title,
+          category: flag.category,
+          flaggedSide: flag.side,
+          flaggedPrice: flag.sidePrice,
+          actualResult: m.result.toUpperCase(),
+          correct,
+          score: flag.score,
+          patternIds: flag.patternIds || [],
+          hoursToClose: flag.hoursToClose,
+          flaggedAt: flag.timestamp,
+          resolvedAt: Date.now(),
+        };
+        // Save to outcomes store
+        saveOutcome(outcome);
+        // Update flag in memory + DB
+        flag.outcome = correct ? 'correct' : 'wrong';
+        saveFlag(flag);
+        updateProfileOutcome(flag, correct);
+        updateOutcomeSummary();
+      }
+      await new Promise(r => setTimeout(r, 150));
+    } catch(e) {}
+  }
+}
+
+function saveOutcome(outcome) {
+  if (!db) return;
+  try {
+    const tx = db.transaction(STORE_OUTCOMES, 'readwrite');
+    tx.objectStore(STORE_OUTCOMES).put(outcome);
+  } catch(e) {}
+}
+
+let outcomeSummary = { total: 0, correct: 0, byCategory: {}, byPattern: {} };
+
+async function loadOutcomeSummary() {
+  if (!db) return;
+  return new Promise(resolve => {
+    try {
+      const tx = db.transaction(STORE_OUTCOMES, 'readonly');
+      const req = tx.objectStore(STORE_OUTCOMES).getAll();
+      req.onsuccess = () => {
+        const all = req.result || [];
+        outcomeSummary = computeOutcomeSummary(all);
+        updateOutcomeSummary();
+        resolve();
+      };
+      req.onerror = () => resolve();
+    } catch(e) { resolve(); }
+  });
+}
+
+function computeOutcomeSummary(outcomes) {
+  const summary = { total: outcomes.length, correct: 0, byCategory: {}, byPattern: {} };
+  for (const o of outcomes) {
+    if (o.correct) summary.correct++;
+    const cat = o.category || 'Other';
+    if (!summary.byCategory[cat]) summary.byCategory[cat] = { total: 0, correct: 0 };
+    summary.byCategory[cat].total++;
+    if (o.correct) summary.byCategory[cat].correct++;
+    for (const pid of (o.patternIds || [])) {
+      if (!summary.byPattern[pid]) summary.byPattern[pid] = { total: 0, correct: 0 };
+      summary.byPattern[pid].total++;
+      if (o.correct) summary.byPattern[pid].correct++;
+    }
+  }
+  return summary;
+}
+
+function updateOutcomeSummary() {
+  const el = document.getElementById('outcomeSummaryBar');
+  if (!el) return;
+  const { total, correct, byCategory } = outcomeSummary;
+  if (total === 0) {
+    el.innerHTML = '<span style="color:rgba(245,240,235,0.35);font-size:12px">No resolved flags yet — outcomes will appear as markets settle</span>';
+    return;
+  }
+  const pct = Math.round(correct / total * 100);
+  const catRows = Object.entries(byCategory)
+    .sort((a, b) => b[1].total - a[1].total)
+    .map(([cat, s]) => {
+      const cp = Math.round(s.correct / s.total * 100);
+      const color = cp >= 75 ? '#7a9e7e' : cp >= 55 ? '#e8b96a' : '#d4849a';
+      return `<span class="outcome-cat-pill" style="border-color:${color}"><span style="color:${color}">${cp}%</span> ${cat} (${s.total})</span>`;
+    }).join('');
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="font-family:'DM Mono',monospace;font-size:18px;font-weight:600;color:${pct>=65?'#7a9e7e':pct>=50?'#e8b96a':'#d4849a'}">${pct}%</div>
+      <div style="font-size:12px;color:rgba(245,240,235,0.5)">${correct}/${total} flags correct</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${catRows}</div>
+    </div>
+  `;
+  // Update badge
+  const badge = document.getElementById('outcomeBadge');
+  if (badge) badge.textContent = total + ' resolved';
+  renderTraderProfiles();
+}
+
+/* ============================================================
+   SYNTHETIC TRADER PROFILES
+   ============================================================ */
+// Inferred from repeated behavioral patterns across flags, NOT real user identities.
+
+let traderProfiles = {}; // profileId -> profile object
+
+async function loadTraderProfiles() {
+  if (!db) return;
+  return new Promise(resolve => {
+    try {
+      const tx = db.transaction(STORE_TRADERS, 'readonly');
+      const req = tx.objectStore(STORE_TRADERS).getAll();
+      req.onsuccess = () => {
+        (req.result || []).forEach(p => { traderProfiles[p.profileId] = p; });
+        renderTraderProfiles();
+        resolve();
+      };
+      req.onerror = () => resolve();
+    } catch(e) { resolve(); }
+  });
+}
+
+function saveTraderProfile(profile) {
+  traderProfiles[profile.profileId] = profile;
+  if (!db) return;
+  try {
+    const tx = db.transaction(STORE_TRADERS, 'readwrite');
+    tx.objectStore(STORE_TRADERS).put(profile);
+  } catch(e) {}
+}
+
+// Called after a flag is created. Attempts to match against or create a trader profile.
+function updateTraderProfiles(flag) {
+  const series = flag.ticker.split('-')[0];
+  const profileId = 'tp_' + series; // one profile per series (boldly assumes pattern = same actor)
+
+  if (!traderProfiles[profileId]) {
+    traderProfiles[profileId] = {
+      profileId,
+      series,
+      label: `Inferred ${SERIES_LABELS[series] || series} specialist`,
+      flags: [],
+      firstSeen: flag.timestamp,
+      lastSeen: flag.timestamp,
+      correctCount: 0,
+      totalResolved: 0,
+      categoryAccuracy: {},
+      sizeSignature: [],   // recurring contract sizes
+      timingSignature: [], // hours-to-close at flag time
+      sideSignature: [],   // YES/NO preference
+    };
+  }
+
+  const p = traderProfiles[profileId];
+  p.flags.push(flag.id);
+  p.lastSeen = flag.timestamp;
+  p.sizeSignature.push(flag.maxSingleTrade);
+  p.timingSignature.push(flag.hoursToClose);
+  p.sideSignature.push(flag.side);
+
+  // Compute inferred traits (keep last 20 observations)
+  if (p.sizeSignature.length > 20) p.sizeSignature.shift();
+  if (p.timingSignature.length > 20) p.timingSignature.shift();
+  if (p.sideSignature.length > 20) p.sideSignature.shift();
+
+  // Dominant side preference
+  const yesPref = p.sideSignature.filter(s => s === 'YES').length / p.sideSignature.length;
+  p.sidePref = yesPref > 0.7 ? 'YES-biased' : yesPref < 0.3 ? 'NO-biased' : 'Balanced';
+
+  // Timing preference
+  const avgTiming = p.timingSignature.reduce((a,b)=>a+b,0) / p.timingSignature.length;
+  p.timingPref = avgTiming < 2 ? 'Last-minute' : avgTiming < 12 ? 'Near-close' : 'Early';
+
+  // Typical size
+  const sortedSizes = [...p.sizeSignature].sort((a,b)=>a-b);
+  p.typicalSize = sortedSizes[Math.floor(sortedSizes.length/2)]; // median
+
+  // Confidence score for the profile (grows with observations)
+  p.confidence = Math.min(100, Math.round((p.flags.length / 5) * 40 + (p.flags.length >= 10 ? 30 : 0)));
+
+  saveTraderProfile(p);
+  return profileId;
+}
+
+// When an outcome is logged, update the relevant trader profile's accuracy
+function updateProfileOutcome(flag, correct) {
+  const series = flag.ticker.split('-')[0];
+  const profileId = 'tp_' + series;
+  const p = traderProfiles[profileId];
+  if (!p) return;
+  p.totalResolved++;
+  if (correct) p.correctCount++;
+  p.winRate = Math.round(p.correctCount / p.totalResolved * 100);
+  const cat = flag.category || 'Other';
+  if (!p.categoryAccuracy[cat]) p.categoryAccuracy[cat] = { correct: 0, total: 0 };
+  p.categoryAccuracy[cat].total++;
+  if (correct) p.categoryAccuracy[cat].correct++;
+  saveTraderProfile(p);
+}
+
+function getHighConfidenceProfiles() {
+  return Object.values(traderProfiles)
+    .filter(p => p.flags.length >= 3 && p.confidence >= 30)
+    .sort((a, b) => (b.winRate||0) - (a.winRate||0));
+}
+
+function renderTraderProfiles() {
+  const el = document.getElementById('traderProfilesList');
+  if (!el) return;
+  const profiles = getHighConfidenceProfiles();
+  if (!profiles.length) {
+    el.innerHTML = '<span style="color:rgba(245,240,235,0.35);font-size:12px">Profiles build as flags accumulate across sessions (need ≥3 flags per series)</span>';
+    return;
+  }
+  el.innerHTML = profiles.slice(0, 8).map(p => {
+    const wr = p.winRate !== undefined ? p.winRate + '%' : 'pending';
+    const wrColor = (p.winRate||0) >= 70 ? '#7a9e7e' : (p.winRate||0) >= 50 ? '#e8b96a' : '#d4849a';
+    const topCats = Object.entries(p.categoryAccuracy||{})
+      .sort((a,b)=>b[1].total-a[1].total).slice(0,2)
+      .map(([c,s])=>`${c}: ${Math.round(s.correct/s.total*100)}%`).join(', ');
+    return `
+      <div style="background:rgba(92,158,160,0.05);border:1px solid rgba(92,158,160,0.15);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-size:13px;font-weight:500;color:#f5f0eb;margin-bottom:3px">${escHtml(p.label)}</div>
+            <div style="font-size:11px;color:rgba(245,240,235,0.45)">${p.flags.length} flags &middot; ${p.timingPref} &middot; ${p.sidePref} &middot; typical ${Math.round(p.typicalSize||0)} contracts</div>
+            ${topCats ? `<div style="font-size:10px;color:rgba(245,240,235,0.3);margin-top:2px">${topCats}</div>` : ''}
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:600;color:${wrColor}">${wr}</div>
+            <div style="font-size:10px;color:rgba(245,240,235,0.35)">win rate</div>
+            <div style="font-size:10px;color:rgba(245,240,235,0.25);margin-top:2px">conf: ${p.confidence}%</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ============================================================
+   UTILITY FUNCTIONS
+   ============================================================ */
+
+function showToast(msg, type = '') {
+  const container = document.getElementById('toastContainer');
+  const div = document.createElement('div');
+  div.className = 'toast ' + type;
+  div.textContent = msg;
+  container.appendChild(div);
+  setTimeout(() => { div.remove(); }, 3000);
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function truncate(str, len) {
+  if (!str) return '';
+  return str.length > len ? str.slice(0, len) + '...' : str;
+}
+
+function fmtNum(n, decimals = 2) {
+  const num = typeof n === 'string' ? parseFloat(n) : n;
+  if (isNaN(num)) return '0';
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 10000) return (num / 1000).toFixed(1) + 'K';
+  if (decimals === 0) return Math.round(num).toLocaleString();
+  return num.toFixed(decimals).replace(/\.?0+$/, '');
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('Copied!'), () => showToast('Copy failed', 'error'));
+}
+
+/* ============================================================
+   SETTINGS SAVE/LOAD
+   ============================================================ */
+
+function saveSettings() {
+  localStorage.setItem('kw_email', document.getElementById('settingsEmail').value);
+  localStorage.setItem('kw_webhook', document.getElementById('settingsWebhook').value);
+  localStorage.setItem('kw_threshold', document.getElementById('settingsThreshold').value);
+  const interval = parseInt(document.getElementById('settingsInterval').value);
+  if (!isNaN(interval) && interval >= 30) {
+    refreshInterval = interval;
+    resetCountdown();
+  }
+}
+
+function loadSettings() {
+  const email = localStorage.getItem('kw_email');
+  const webhook = localStorage.getItem('kw_webhook');
+  const threshold = localStorage.getItem('kw_threshold');
+  if (email) document.getElementById('settingsEmail').value = email;
+  if (webhook) document.getElementById('settingsWebhook').value = webhook;
+  if (threshold) document.getElementById('settingsThreshold').value = threshold;
+}
+
+document.getElementById('settingsEmail').addEventListener('change', saveSettings);
+document.getElementById('settingsWebhook').addEventListener('change', saveSettings);
+document.getElementById('settingsThreshold').addEventListener('change', saveSettings);
+document.getElementById('settingsInterval').addEventListener('change', saveSettings);
+
+/* ============================================================
+   KEYBOARD SHORTCUTS
+   ============================================================ */
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDrillPanel();
+  if (e.key === 'r' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT') manualRefresh();
+});
+
+/* ============================================================
+   INITIALIZATION
+   ============================================================ */
+
+function init() {
+  initDB();
+  loadSettings();
+  startCountdown();
+  startSessionTimer();
+  // Check outcomes every 5 minutes
+  setInterval(checkAndLogOutcomes, 5 * 60 * 1000);
+  // First fetch on load
+  setTimeout(manualRefresh, 800);
+}
+
+init();
+
+</script>
+</body>
+</html>

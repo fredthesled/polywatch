@@ -1,0 +1,3070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
+<title>PolyWatch V3 — Insider Bet Anomaly Detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f5f0eb;
+  --surface: #ede8e0;
+  --surface2: #e4ddd3;
+  --sidebar: #2c2825;
+  --sidebar-hover: #3d3632;
+  --sidebar-active: #4a4540;
+  --primary: #7a9e7e;
+  --primary-dim: rgba(122,158,126,0.15);
+  --amber: #c8973a;
+  --amber-dim: rgba(200,151,58,0.15);
+  --burgundy: #8b3a52;
+  --burgundy-dim: rgba(139,58,82,0.15);
+  --text: #2c2825;
+  --text-mid: #5a5450;
+  --text-dim: #8a8480;
+  --border: rgba(44,40,37,0.12);
+  --border-mid: rgba(44,40,37,0.2);
+  --shadow: 0 2px 12px rgba(44,40,37,0.08);
+  --shadow-md: 0 4px 24px rgba(44,40,37,0.12);
+
+  /* Pattern colors */
+  --cal: #7c5cbf;
+  --sybil: #2a9d8f;
+  --dorm: #c8973a;
+  --cat: #4a9a6b;
+  --user: #e07c3a;
+  --jit: #c8394b;
+}
+
+html, body { height: 100%; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--sidebar);
+  color: #f5f0eb;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar-logo {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid rgba(245,240,235,0.08);
+}
+
+.logo-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.logo-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #f5f0eb;
+  letter-spacing: -0.02em;
+}
+
+.logo-sub {
+  font-size: 10px;
+  color: rgba(245,240,235,0.45);
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding-left: 42px;
+}
+
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 0;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  cursor: pointer;
+  transition: background 150ms ease;
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(245,240,235,0.65);
+  border-left: 2px solid transparent;
+  user-select: none;
+}
+
+.nav-item:hover { background: var(--sidebar-hover); color: #f5f0eb; }
+
+.nav-item.active {
+  background: var(--sidebar-active);
+  color: #f5f0eb;
+  border-left-color: var(--primary);
+  font-weight: 500;
+}
+
+.nav-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--burgundy);
+  color: #fff;
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  padding: 1px 5px;
+  border-radius: 9px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.sidebar-footer {
+  padding: 12px 20px;
+  border-top: 1px solid rgba(245,240,235,0.08);
+  font-size: 10px;
+  color: rgba(245,240,235,0.3);
+  font-family: 'DM Mono', monospace;
+}
+
+/* ===== MAIN CONTENT ===== */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.topbar-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.topbar-spacer { flex: 1; }
+
+.db-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  color: var(--text-mid);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.db-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #888;
+  flex-shrink: 0;
+  transition: background 400ms;
+}
+
+.db-dot.online { background: #5a9e6f; box-shadow: 0 0 0 2px rgba(90,158,111,0.25); }
+.db-dot.offline { background: var(--burgundy); }
+
+.scan-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 150ms ease;
+  line-height: 1.3;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+.btn-primary:hover { background: #6a8e6e; }
+
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border-mid);
+}
+.btn-secondary:hover { background: var(--surface); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-mid);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { background: var(--surface2); color: var(--text); }
+
+.btn-danger {
+  background: var(--burgundy);
+  color: #fff;
+}
+.btn-danger:hover { background: #7a2e43; }
+
+.btn-amber {
+  background: var(--amber);
+  color: #fff;
+}
+.btn-amber:hover { background: #b5842e; }
+
+.btn-sm { padding: 4px 10px; font-size: 11px; }
+.btn-xs { padding: 3px 8px; font-size: 10px; }
+
+.countdown-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--text-mid);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 5px 10px;
+  border-radius: 6px;
+  min-width: 56px;
+  text-align: center;
+}
+
+/* ===== TAB CONTENT ===== */
+.tab-content { display: none; flex: 1; overflow-y: auto; padding: 20px 24px; }
+.tab-content.active { display: flex; flex-direction: column; gap: 16px; }
+
+/* ===== FILTER PILLS ===== */
+.filter-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  padding: 5px 14px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1.5px solid var(--border-mid);
+  background: var(--bg);
+  color: var(--text-mid);
+  transition: all 150ms;
+  user-select: none;
+}
+.pill:hover { border-color: var(--primary); color: var(--primary); }
+.pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.pill.p-cal.active { background: var(--cal); border-color: var(--cal); }
+.pill.p-sybil.active { background: var(--sybil); border-color: var(--sybil); }
+.pill.p-dorm.active { background: var(--dorm); border-color: var(--dorm); }
+.pill.p-cat.active { background: var(--cat); border-color: var(--cat); }
+.pill.p-user.active { background: var(--user); border-color: var(--user); }
+.pill.p-jit.active { background: var(--jit); border-color: var(--jit); }
+
+/* ===== ALERT CARDS ===== */
+.alerts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alert-card {
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--amber);
+  overflow: hidden;
+  transition: box-shadow 200ms;
+}
+.alert-card:hover { box-shadow: var(--shadow-md); }
+.alert-card.extreme { border-left-color: var(--burgundy); }
+.alert-card.high { border-left-color: var(--amber); }
+
+.alert-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.alert-score {
+  font-family: 'DM Mono', monospace;
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 44px;
+  text-align: center;
+  padding-top: 2px;
+}
+.score-extreme { color: var(--burgundy); }
+.score-high { color: var(--amber); }
+
+.alert-meta { flex: 1; min-width: 0; }
+
+.alert-market {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.35;
+  margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.alert-tags {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.02em;
+}
+.tag-cat { background: var(--surface2); color: var(--text-mid); }
+.tag-cal { background: rgba(124,92,191,0.12); color: var(--cal); }
+.tag-sybil { background: rgba(42,157,143,0.12); color: var(--sybil); }
+.tag-dorm { background: rgba(200,151,58,0.15); color: #9a6e20; }
+.tag-cat-p { background: rgba(74,154,107,0.12); color: var(--cat); }
+.tag-user { background: rgba(224,124,58,0.12); color: var(--user); }
+.tag-jit { background: rgba(200,57,75,0.12); color: var(--jit); }
+.tag-yes { background: rgba(122,158,126,0.18); color: #4a7e50; }
+.tag-no { background: var(--burgundy-dim); color: var(--burgundy); }
+
+.alert-right {
+  flex-shrink: 0;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.alert-time {
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  color: var(--text-dim);
+}
+
+.alert-value {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+}
+
+.chevron {
+  font-size: 12px;
+  color: var(--text-dim);
+  transition: transform 250ms;
+  margin-top: 2px;
+}
+.chevron.open { transform: rotate(180deg); }
+
+.alert-body {
+  display: none;
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--border);
+  margin-top: 0;
+}
+.alert-body.open { display: block; }
+
+.score-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 14px 0 12px;
+}
+
+.score-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.score-bar-label {
+  font-size: 11px;
+  color: var(--text-mid);
+  width: 130px;
+  flex-shrink: 0;
+}
+
+.score-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.score-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--primary);
+  transition: width 400ms ease;
+}
+.score-bar-fill.high-fill { background: var(--amber); }
+.score-bar-fill.extreme-fill { background: var(--burgundy); }
+
+.score-bar-val {
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  color: var(--text-mid);
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.alert-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+/* ===== PATTERNS TAB ===== */
+.patterns-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .patterns-grid { grid-template-columns: 1fr; }
+}
+
+.pattern-card {
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  border-left: 4px solid;
+  padding: 16px;
+}
+.pattern-card.p-cal { border-left-color: var(--cal); }
+.pattern-card.p-sybil { border-left-color: var(--sybil); }
+.pattern-card.p-dorm { border-left-color: var(--dorm); }
+.pattern-card.p-cat { border-left-color: var(--cat); }
+.pattern-card.p-user { border-left-color: var(--user); }
+.pattern-card.p-jit { border-left-color: var(--jit); }
+
+.pattern-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.pattern-name { font-size: 14px; font-weight: 600; }
+.pattern-counter {
+  font-family: 'DM Mono', monospace;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+}
+.p-cal .pattern-counter { color: var(--cal); }
+.p-sybil .pattern-counter { color: var(--sybil); }
+.p-dorm .pattern-counter { color: var(--dorm); }
+.p-cat .pattern-counter { color: var(--cat); }
+.p-user .pattern-counter { color: var(--user); }
+.p-jit .pattern-counter { color: var(--jit); }
+
+.pattern-source { font-size: 10px; color: var(--text-dim); margin-bottom: 12px; }
+
+.pattern-signals { list-style: none; margin-bottom: 12px; }
+.pattern-signal {
+  display: flex;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-mid);
+  margin-bottom: 5px;
+  align-items: flex-start;
+}
+.pattern-signal::before { content: "›"; font-weight: 600; flex-shrink: 0; margin-top: -1px; }
+.signal-threshold {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  background: var(--surface2);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--text-mid);
+  white-space: nowrap;
+}
+
+.pattern-wallets {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+.pattern-wallets-label { font-size: 10px; color: var(--text-dim); margin-bottom: 6px; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; }
+.pattern-wallet-link {
+  display: inline-block;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  color: var(--primary);
+  cursor: pointer;
+  margin-right: 8px;
+  margin-bottom: 4px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.pattern-wallet-link:hover { color: #5a8e5e; }
+.pattern-no-wallets { font-size: 11px; color: var(--text-dim); font-style: italic; }
+
+/* ===== BACKSCRAPE TAB ===== */
+.backscrape-controls {
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 16px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-mid);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.form-select, .form-input {
+  background: var(--bg);
+  border: 1px solid var(--border-mid);
+  border-radius: 7px;
+  padding: 7px 10px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  outline: none;
+  transition: border-color 150ms;
+}
+.form-select:focus, .form-input:focus { border-color: var(--primary); }
+
+.slider-row { display: flex; align-items: center; gap: 8px; }
+.form-range { accent-color: var(--primary); width: 120px; }
+.range-val { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-mid); }
+
+.progress-section {
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 16px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.progress-bar-track {
+  height: 8px;
+  background: var(--surface2);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 4px;
+  transition: width 300ms ease;
+}
+
+.progress-log {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--text-mid);
+  max-height: 100px;
+  overflow-y: auto;
+  line-height: 1.7;
+}
+
+.results-table-wrap { overflow-x: auto; }
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.data-table th {
+  text-align: left;
+  padding: 9px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-dim);
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.data-table th:first-child { border-radius: 7px 0 0 0; }
+.data-table th:last-child { border-radius: 0 7px 0 0; }
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--surface2); }
+.data-table .mono { font-family: 'DM Mono', monospace; }
+
+/* ===== WALLET WATCH ===== */
+.wallet-row { cursor: pointer; }
+.wallet-row:hover td { background: rgba(122,158,126,0.06); }
+
+.wallet-address-cell {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ===== ANALYTICS ===== */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 800px) {
+  .charts-grid { grid-template-columns: 1fr; }
+}
+
+.chart-card {
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 16px;
+}
+
+.chart-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  color: var(--text);
+}
+
+.chart-wrap { height: 200px; position: relative; }
+
+/* ===== GMAIL ALERTS ===== */
+.gmail-card {
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 20px;
+  max-width: 600px;
+}
+
+.gmail-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+
+.toggle-group {
+  display: flex;
+  gap: 0;
+  border: 1.5px solid var(--border-mid);
+  border-radius: 7px;
+  overflow: hidden;
+  width: fit-content;
+  margin-bottom: 16px;
+}
+.toggle-btn {
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: var(--text-mid);
+  transition: all 150ms;
+}
+.toggle-btn.active { background: var(--primary); color: #fff; }
+
+.webhook-section { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
+.webhook-label { font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+.webhook-row { display: flex; gap: 8px; }
+.webhook-row .form-input { flex: 1; }
+
+/* ===== METHODOLOGY ===== */
+.method-section { margin-bottom: 20px; }
+.method-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.score-layer-cards { display: flex; flex-direction: column; gap: 8px; }
+.score-layer-card {
+  background: var(--surface);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.score-layer-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+.score-layer-weight {
+  font-family: 'DM Mono', monospace;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--primary);
+  width: 40px;
+  flex-shrink: 0;
+}
+.score-layer-name { font-size: 13px; font-weight: 500; flex: 1; }
+.score-layer-body {
+  display: none;
+  padding: 0 16px 14px;
+  font-size: 12px;
+  color: var(--text-mid);
+  line-height: 1.6;
+  border-top: 1px solid var(--border);
+}
+.score-layer-body.open { display: block; padding-top: 12px; }
+
+.method-patterns-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+@media (max-width: 800px) { .method-patterns-grid { grid-template-columns: 1fr 1fr; } }
+
+.method-pattern-card {
+  background: var(--surface);
+  border-radius: 8px;
+  border-left: 3px solid;
+  padding: 12px;
+  font-size: 12px;
+}
+.method-pattern-name { font-weight: 600; margin-bottom: 4px; font-size: 13px; }
+.method-pattern-threshold {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.disclaimer {
+  background: var(--amber-dim);
+  border: 1px solid rgba(200,151,58,0.3);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 12px;
+  color: #7a5a20;
+  line-height: 1.6;
+}
+
+.api-ref { background: var(--surface); border-radius: 8px; border: 1px solid var(--border); }
+.api-ref-row {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  align-items: flex-start;
+}
+.api-ref-row:last-child { border-bottom: none; }
+.api-method {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  background: var(--primary-dim);
+  color: #3a6e40;
+  padding: 2px 7px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.api-url { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-mid); word-break: break-all; }
+.api-note { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+
+/* ===== DRILL-DOWN PANEL ===== */
+.drill-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 999;
+  display: none;
+}
+.drill-backdrop.open { display: block; }
+
+.drill-panel {
+  position: fixed;
+  top: 0;
+  right: -440px;
+  width: 420px;
+  height: 100vh;
+  background: var(--sidebar);
+  color: #f5f0eb;
+  transition: right 300ms ease;
+  z-index: 1000;
+  overflow-y: auto;
+  padding: 24px;
+  box-shadow: -4px 0 24px rgba(0,0,0,0.3);
+}
+.drill-panel.open { right: 0; }
+
+.drill-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 12px;
+}
+
+.drill-panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f5f0eb;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.drill-close {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #f5f0eb;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 150ms;
+}
+.drill-close:hover { background: rgba(255,255,255,0.2); }
+
+.drill-section-label {
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(245,240,235,0.4);
+  margin-bottom: 10px;
+}
+
+.drill-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(245,240,235,0.5);
+  padding: 24px 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner-ring {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(245,240,235,0.2);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+
+.bet-row {
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-left: 3px solid;
+}
+.bet-row.yes { border-left-color: var(--primary); }
+.bet-row.no { border-left-color: var(--burgundy); }
+
+.bet-row-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.outcome-badge {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'DM Mono', monospace;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+.outcome-yes { background: rgba(122,158,126,0.25); color: #a8d4ac; }
+.outcome-no { background: rgba(139,58,82,0.3); color: #d4849a; }
+
+.side-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: rgba(245,240,235,0.55);
+}
+
+.bet-meta {
+  display: flex;
+  gap: 14px;
+  font-size: 11px;
+  color: rgba(245,240,235,0.65);
+  font-family: 'DM Mono', monospace;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.bet-meta-val { color: #f5f0eb; font-weight: 500; }
+
+.bet-links { display: flex; gap: 6px; }
+.bet-link {
+  font-size: 10px;
+  padding: 3px 9px;
+  border-radius: 5px;
+  background: rgba(255,255,255,0.08);
+  color: rgba(245,240,235,0.7);
+  text-decoration: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: all 150ms;
+  white-space: nowrap;
+}
+.bet-link:hover { background: rgba(255,255,255,0.15); color: #f5f0eb; }
+
+.drill-wallet-info {
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 16px;
+  font-size: 12px;
+}
+.drill-wallet-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 7px;
+}
+.drill-wallet-row:last-child { margin-bottom: 0; }
+.drill-wallet-key { color: rgba(245,240,235,0.5); font-size: 11px; }
+.drill-wallet-val { color: #f5f0eb; font-family: 'DM Mono', monospace; font-size: 11px; cursor: pointer; }
+.drill-wallet-val:hover { color: var(--primary); }
+
+.drill-copy-hint { font-size: 10px; color: rgba(245,240,235,0.35); margin-top: 4px; }
+
+.drill-market-group {
+  margin-bottom: 16px;
+}
+.drill-market-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.05);
+  border-left: 3px solid var(--primary);
+  border-radius: 6px;
+  cursor: pointer;
+  margin-bottom: 6px;
+  gap: 10px;
+}
+.drill-market-group-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: #f5f0eb;
+  line-height: 1.35;
+  flex: 1;
+}
+.drill-market-summary { font-size: 10px; color: rgba(245,240,235,0.5); margin-top: 3px; font-family: 'DM Mono', monospace; }
+.drill-market-toggle { font-size: 12px; color: rgba(245,240,235,0.4); flex-shrink: 0; }
+
+.drill-wallet-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.drill-stat-card {
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.drill-stat-label { font-size: 10px; color: rgba(245,240,235,0.45); margin-bottom: 3px; }
+.drill-stat-val { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; color: #f5f0eb; }
+.drill-stat-sub { font-size: 10px; color: rgba(245,240,235,0.4); margin-top: 2px; }
+
+.drill-pattern-pills { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; }
+.drill-pattern-pill {
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.1);
+  color: rgba(245,240,235,0.8);
+}
+
+.drill-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 6px;
+  margin-top: 8px;
+  color: rgba(245,240,235,0.7);
+}
+.drill-total-val { font-family: 'DM Mono', monospace; color: #f5f0eb; font-weight: 500; }
+
+.drill-fallback {
+  font-size: 11px;
+  color: rgba(245,240,235,0.4);
+  text-align: center;
+  padding: 12px;
+  font-style: italic;
+}
+
+/* ===== LOADING STATES ===== */
+.loading-placeholder {
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--surface) 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  height: 14px;
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* ===== MISC ===== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.section-card {
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 16px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.section-title { font-size: 14px; font-weight: 600; }
+
+.score-extreme-label { color: var(--burgundy); }
+.score-high-label { color: var(--amber); }
+
+.stat-pill {
+  background: var(--surface2);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: 'DM Mono', monospace;
+}
+.stat-pill strong { font-size: 18px; font-weight: 500; }
+
+.stat-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(60px);
+  background: var(--sidebar);
+  color: #f5f0eb;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 2000;
+  transition: transform 300ms ease;
+  pointer-events: none;
+  box-shadow: var(--shadow-md);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* Backscrape mini-flags */
+.mini-flag-list { margin-top: 10px; }
+.mini-flag-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+.mini-flag-score {
+  font-family: 'DM Mono', monospace;
+  font-weight: 600;
+  color: var(--burgundy);
+  width: 28px;
+  flex-shrink: 0;
+}
+.mini-flag-wallet {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--text-mid);
+  flex: 1;
+}
+
+.collapsible-content { display: none; }
+.collapsible-content.open { display: block; }
+
+hr.panel-divider { border: none; border-top: 1px solid rgba(245,240,235,0.1); margin: 16px 0; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <svg class="logo-icon" viewBox="0 0 32 32" fill="none" aria-label="PolyWatch logo">
+        <rect width="32" height="32" rx="8" fill="#7a9e7e" opacity="0.15"/>
+        <circle cx="16" cy="16" r="9" stroke="#7a9e7e" stroke-width="2"/>
+        <circle cx="16" cy="16" r="4" fill="#8b3a52"/>
+        <line x1="16" y1="7" x2="16" y2="4" stroke="#7a9e7e" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="16" y1="25" x2="16" y2="28" stroke="#7a9e7e" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="7" y1="16" x2="4" y2="16" stroke="#7a9e7e" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="25" y1="16" x2="28" y2="16" stroke="#7a9e7e" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="logo-title">PolyWatch</span>
+    </div>
+    <div class="logo-sub">V3 · Anomaly Detection</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-item active" data-tab="live-feed">
+      <span class="nav-icon">📡</span> Live Feed
+      <span class="nav-badge" id="live-badge">0</span>
+    </div>
+    <div class="nav-item" data-tab="patterns">
+      <span class="nav-icon">🔮</span> Patterns
+    </div>
+    <div class="nav-item" data-tab="backscrape">
+      <span class="nav-icon">🗄</span> Backscrape
+    </div>
+    <div class="nav-item" data-tab="wallet-watch">
+      <span class="nav-icon">👁</span> Wallet Watch
+    </div>
+    <div class="nav-item" data-tab="analytics">
+      <span class="nav-icon">📊</span> Analytics
+    </div>
+    <div class="nav-item" data-tab="gmail-alerts">
+      <span class="nav-icon">✉️</span> Gmail Alerts
+    </div>
+    <div class="nav-item" data-tab="methodology">
+      <span class="nav-icon">📋</span> Methodology
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    Session started <span id="session-time">—</span>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <span class="topbar-title" id="topbar-title">Live Feed</span>
+    <div class="topbar-spacer"></div>
+    <div class="db-badge">
+      <div class="db-dot" id="db-dot"></div>
+      <span id="db-status">Connecting…</span>
+    </div>
+    <div class="scan-controls">
+      <div class="countdown-badge" id="countdown">30s</div>
+      <button class="btn btn-secondary btn-sm" id="pause-btn" onclick="togglePause()">⏸ Pause</button>
+      <button class="btn btn-primary btn-sm" onclick="manualRefresh()">↺ Refresh</button>
+    </div>
+  </div>
+
+  <!-- ===== LIVE FEED TAB ===== -->
+  <div class="tab-content active" id="tab-live-feed">
+    <div class="filter-pills">
+      <div class="pill active" data-filter="all">All</div>
+      <div class="pill p-cal" data-filter="cal">📅 Calendar Spread</div>
+      <div class="pill p-sybil" data-filter="sybil">🔀 Sybil Splitting</div>
+      <div class="pill p-dorm" data-filter="dorm">💤 Dormancy</div>
+      <div class="pill p-cat" data-filter="cat">📌 Cat. Concentration</div>
+      <div class="pill p-user" data-filter="user">🔄 Username Rotation</div>
+      <div class="pill p-jit" data-filter="jit">⚡ Just-in-Time</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-pill">Extreme <strong id="stat-extreme">0</strong></div>
+      <div class="stat-pill">High <strong id="stat-high">0</strong></div>
+      <div class="stat-pill">Session Flags <strong id="stat-total">0</strong></div>
+    </div>
+    <div class="alerts-container" id="alerts-container">
+      <div class="empty-state" id="empty-state">
+        <div style="font-size:32px">📡</div>
+        <div>No alerts yet — click Refresh or wait for next scan cycle</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PATTERNS TAB ===== -->
+  <div class="tab-content" id="tab-patterns">
+    <div class="patterns-grid" id="patterns-grid">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <!-- ===== BACKSCRAPE TAB ===== -->
+  <div class="tab-content" id="tab-backscrape">
+    <div class="backscrape-controls">
+      <div class="form-group">
+        <div class="form-label">Category</div>
+        <select class="form-select" id="bs-category">
+          <option value="all">All Categories</option>
+          <option value="politics">Politics</option>
+          <option value="crypto">Crypto</option>
+          <option value="sports">Sports</option>
+          <option value="economy">Economy</option>
+          <option value="science">Science</option>
+          <option value="entertainment">Entertainment</option>
+          <option value="geopolitics">Geopolitics</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Depth</div>
+        <select class="form-select" id="bs-depth">
+          <option value="100">100 markets</option>
+          <option value="500">500 markets</option>
+          <option value="1000">1000 markets</option>
+          <option value="full" selected>Full archive</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Min Score <span class="range-val" id="bs-min-label">75</span></div>
+        <div class="slider-row">
+          <input type="range" class="form-range" id="bs-min-score" min="50" max="99" value="75"
+            oninput="document.getElementById('bs-min-label').textContent=this.value">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <button class="btn btn-primary" id="bs-start-btn" onclick="startBackscrape()">▶ Start Scrape</button>
+        <button class="btn btn-ghost" id="bs-stop-btn" onclick="stopBackscrape()" disabled>■ Stop</button>
+      </div>
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-header">
+        <span class="section-title" style="font-size:13px">Scrape Progress</span>
+        <span class="mono" style="font-size:11px;color:var(--text-dim)" id="bs-status-text">Idle</span>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="bs-progress" style="width:0%"></div>
+      </div>
+      <div class="progress-log" id="bs-log">Ready to scrape…<br></div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-header">
+        <span class="section-title">Results</span>
+        <span id="bs-result-count" style="font-size:12px;color:var(--text-dim)">0 markets scanned</span>
+      </div>
+      <div class="results-table-wrap">
+        <table class="data-table" id="bs-results-table">
+          <thead>
+            <tr>
+              <th>Market</th>
+              <th>Category</th>
+              <th>Trades</th>
+              <th>Flags</th>
+              <th>Top Score</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="bs-results-body">
+            <tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px;font-size:12px;">No results yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== WALLET WATCH TAB ===== -->
+  <div class="tab-content" id="tab-wallet-watch">
+    <div class="section-card">
+      <div class="section-header">
+        <span class="section-title">Flagged Wallets</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm" onclick="exportWalletCSV()">⬇ Export CSV</button>
+        </div>
+      </div>
+      <div class="results-table-wrap">
+        <table class="data-table" id="wallet-table">
+          <thead>
+            <tr>
+              <th>Wallet</th>
+              <th>Flags</th>
+              <th>Max Score</th>
+              <th>Win Rate</th>
+              <th>Wallet Age</th>
+              <th>Patterns</th>
+              <th>Last Active</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="wallet-table-body">
+            <tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:24px;font-size:12px;">No flagged wallets yet — run a scan</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ANALYTICS TAB ===== -->
+  <div class="tab-content" id="tab-analytics">
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">Hourly Alert Volume</div>
+        <div class="chart-wrap">
+          <canvas id="chart-hourly"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Score Distribution</div>
+        <div class="chart-wrap">
+          <canvas id="chart-score"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Pattern Breakdown</div>
+        <div class="chart-wrap">
+          <canvas id="chart-pattern"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Category Risk</div>
+        <div class="chart-wrap">
+          <canvas id="chart-category"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== GMAIL ALERTS TAB ===== -->
+  <div class="tab-content" id="tab-gmail-alerts">
+    <div class="gmail-card">
+      <div class="gmail-title">Alert Configuration</div>
+      <div class="form-group" style="margin-bottom:16px">
+        <div class="form-label">Email Address</div>
+        <input class="form-input" type="email" id="alert-email" placeholder="you@gmail.com" style="max-width:340px">
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <div class="form-label">Alert Mode</div>
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="mode-immediate" onclick="setAlertMode('immediate')">
+            Immediate (85+)
+          </button>
+          <button class="toggle-btn" id="mode-digest" onclick="setAlertMode('digest')">
+            Digest (4h · 75+)
+          </button>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="openGmailCompose()">
+        ✉ Open Gmail Compose
+      </button>
+      <div class="webhook-section">
+        <div class="webhook-label">Apps Script Webhook</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">
+          Paste your deployed Apps Script web app URL to receive alerts programmatically.
+        </div>
+        <div class="webhook-row">
+          <input class="form-input" id="webhook-url" placeholder="https://script.google.com/macros/s/…/exec">
+          <button class="btn btn-ghost btn-sm" onclick="testWebhook()">Test</button>
+        </div>
+        <div id="webhook-status" style="font-size:11px;margin-top:6px;color:var(--text-dim)"></div>
+      </div>
+    </div>
+    <div class="gmail-card" style="margin-top:0">
+      <div class="gmail-title" style="font-size:14px">Recent Alerts Sent</div>
+      <div id="alert-history" style="font-size:12px;color:var(--text-dim);font-style:italic">No alerts sent this session.</div>
+    </div>
+  </div>
+
+  <!-- ===== METHODOLOGY TAB ===== -->
+  <div class="tab-content" id="tab-methodology">
+    <div class="method-section">
+      <div class="method-section-title">
+        <span>🎯</span> Scoring Model
+      </div>
+      <div style="font-size:12px;color:var(--text-mid);margin-bottom:12px;line-height:1.6">
+        Each flagged bet receives a composite anomaly score from 0–100 across 5 weighted layers, then up to +15 bonus points from detected evasion patterns. Alerts fire when score ≥ 85 (Extreme) AND ≥ 3 layers exceed 50.
+      </div>
+      <div class="score-layer-cards" id="score-layers-container"></div>
+    </div>
+
+    <div class="method-section">
+      <div class="method-section-title"><span>🔮</span> Evasion Patterns (+3 pts each, max +15)</div>
+      <div class="method-patterns-grid" id="method-patterns-grid"></div>
+    </div>
+
+    <div class="method-section">
+      <div class="method-section-title"><span>⚖️</span> Legal Disclaimer</div>
+      <div class="disclaimer">
+        PolyWatch is a research and analysis tool intended for educational purposes only. All alerts, scores, and flagged wallets are generated algorithmically based on probabilistic models and do not constitute evidence of wrongdoing. Polymarket trading is subject to the platform's terms of service. This tool does not store personal data or private keys. Use responsibly. Not financial advice.
+      </div>
+    </div>
+
+    <div class="method-section">
+      <div class="method-section-title"><span>🔌</span> API Reference</div>
+      <div class="api-ref">
+        <div class="api-ref-row">
+          <div>
+            <div><span class="api-method">GET</span></div>
+          </div>
+          <div>
+            <div class="api-url">https://gamma-api.polymarket.com/markets?closed=false&limit=100&offset=N</div>
+            <div class="api-note">Active markets. Returns id, question, slug, conditionId, clobTokenIds[], endDate, liquidity, volume, outcomePrices[], active. Rate limit: ~60 req/min.</div>
+          </div>
+        </div>
+        <div class="api-ref-row">
+          <div>
+            <div><span class="api-method">GET</span></div>
+          </div>
+          <div>
+            <div class="api-url">https://data-api.polymarket.com/trades?market={conditionId}&limit=50</div>
+            <div class="api-note">Trades per market. Returns proxyWallet, side (BUY/SELL), size, price, outcome, timestamp (unix), transactionHash. Rate limit: ~30 req/min.</div>
+          </div>
+        </div>
+        <div class="api-ref-row">
+          <div>
+            <div><span class="api-method">CORS</span></div>
+          </div>
+          <div>
+            <div class="api-url">https://corsproxy.io/?url={encoded_url}</div>
+            <div class="api-note">Used as CORS proxy for browser-side API calls. Falls back through three proxy services; shows empty trade list if all fail. Session cache via sessionStorage keyed by conditionId + wallet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DRILL-DOWN PANEL ===== -->
+<div class="drill-backdrop" id="drill-backdrop" onclick="closeDrillPanel()"></div>
+<div class="drill-panel" id="drill-panel">
+  <div class="drill-panel-header">
+    <div class="drill-panel-title" id="drill-panel-title">Loading…</div>
+    <button class="drill-close" onclick="closeDrillPanel()">✕</button>
+  </div>
+  <div id="drill-panel-body">
+    <div class="drill-spinner"><div class="spinner-ring"></div> Loading trade data…</div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================================================
+   POLYWATCH V3 — MAIN APPLICATION
+   =================================================== */
+
+// ===== CONSTANTS =====
+const SUPABASE_URL = 'https://nigntdyuqxjktmaxttkc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pZ250ZHl1cXhqa3RtYXh0dGtjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2NDE5NjcsImV4cCI6MjA1OTIxNzk2N30.GvEUwUHFRFuU9Pph0Z7JVmFtT3VDkpVtUEsG9bHb1VU';
+
+const PATTERN_DEFS = [
+  { id: 'cal', name: 'Calendar Spread / Decoy Bets', color: '#7c5cbf', tagClass: 'tag-cal',
+    source: 'Temporal evasion via multi-date decoy positions',
+    signals: [
+      { text: 'Decoy-to-target bet ratio', threshold: '≥ 8×' },
+      { text: 'Adjacent date markets', threshold: '≥ 3 dates' },
+      { text: 'Bet size variance decoy vs target', threshold: '> 40%' },
+    ]
+  },
+  { id: 'sybil', name: 'Sybil Splitting', color: '#2a9d8f', tagClass: 'tag-sybil',
+    source: 'Multi-wallet fragmentation to avoid size anomaly',
+    signals: [
+      { text: 'Coordinated wallets detected', threshold: '≥ 4 wallets' },
+      { text: 'Funding delta between wallets', threshold: '< 60 seconds' },
+      { text: 'Bet amount variance across wallets', threshold: '< 2%' },
+    ]
+  },
+  { id: 'dorm', name: 'Dormancy + Resurface', color: '#c8973a', tagClass: 'tag-dorm',
+    source: 'Aged wallet reactivation to obscure trail',
+    signals: [
+      { text: 'Wallet dormancy period', threshold: '≥ 210 days' },
+      { text: 'Reactivation bet size percentile', threshold: 'Top decile' },
+      { text: 'Time between dormancy end and trade', threshold: '< 2 hours' },
+    ]
+  },
+  { id: 'cat', name: 'Category Concentration', color: '#4a9a6b', tagClass: 'tag-cat-p',
+    source: 'Systematic specialization in insider-accessible verticals',
+    signals: [
+      { text: 'Bets concentrated in single category', threshold: '≥ 80%' },
+      { text: 'Win rate within that category', threshold: '≥ 90%' },
+      { text: 'Markets predicted correctly before catalyst', threshold: '≥ 3 events' },
+    ]
+  },
+  { id: 'user', name: 'Username Rotation', color: '#e07c3a', tagClass: 'tag-user',
+    source: 'Identity cycling between market events',
+    signals: [
+      { text: 'Display name changes detected', threshold: '≥ 2 cycles' },
+      { text: 'Change timing relative to market close', threshold: '< 48 hours' },
+      { text: 'Same proxy wallet across name changes', threshold: 'Confirmed' },
+    ]
+  },
+  { id: 'jit', name: 'Just-in-Time Timing', color: '#c8394b', tagClass: 'tag-jit',
+    source: 'Micro-window entry before resolution events',
+    signals: [
+      { text: 'Entry time before market resolution', threshold: '≤ 6 hours' },
+      { text: 'Recurring JIT behavior', threshold: '≥ 3 occurrences' },
+      { text: 'Price impact at entry', threshold: '> 8%' },
+    ]
+  },
+];
+
+const SCORE_LAYERS = [
+  { name: 'Size Abnormality', weight: '30%', field: 'score_size',
+    desc: 'Measures how far the trade size deviates from the wallet\'s historical mean and from the market\'s liquidity profile. A single bet consuming >5% of market liquidity triggers maximum score. Compares against rolling 90-day wallet size histogram.' },
+  { name: 'Price Impact', weight: '25%', field: 'score_impact',
+    desc: 'Calculates the immediate price movement caused by the bet in basis points relative to the market\'s pre-trade price. High-score bets move YES/NO prices by ≥8% within the trade block, suggesting large informed capital entering a thin orderbook.' },
+  { name: 'Timing to Catalyst', weight: '20%', field: 'score_timing',
+    desc: 'Quantifies proximity to known or estimated resolution events. Scores peak when trades occur within 6 hours of resolution, weighted by how unusual that entry time is given the wallet\'s prior behavior patterns.' },
+  { name: 'Wallet Novelty', weight: '15%', field: 'score_wallet',
+    desc: 'Evaluates wallet age (days since first on-chain transaction), funding source diversity, and prior market participation. Brand new wallets funded from mixers or bridge contracts receive maximum novelty penalty.' },
+  { name: 'Repeated Edge', weight: '10%', field: 'score_history',
+    desc: 'Tracks the wallet\'s historical win rate on similar markets. A wallet with ≥85% accuracy across ≥10 resolved markets in the same category receives peak repeated-edge score, adjusted for base rate of the market category.' },
+];
+
+const MARKET_CATEGORIES = ['Politics','Crypto','Sports','Economy','Science','Entertainment','Geopolitics'];
+// ===== STATE =====
+let sessionAlerts = [];
+let flaggedWallets = {};
+let activeFilter = 'all';
+let scanPaused = false;
+let countdownSecs = 30;
+let countdownTimer = null;
+let chartsInitialized = false;
+let backscrapeRunning = false;
+let backscrapeTimeout = null;
+let alertEmail = '';
+let alertMode = 'immediate';
+let alertHistory = [];
+let supabaseClient = null;
+let patternCounters = { cal:0, sybil:0, dorm:0, cat:0, user:0, jit:0 };
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('session-time').textContent = new Date().toLocaleTimeString();
+  initIndexedDB();
+  initSupabase();
+  renderPatterns();
+  renderMethodology();
+  startCountdown();
+  // Don't auto-scan on load — show empty state until user triggers refresh
+  showToast('Connected — click Refresh to fetch live trades');
+  setupFilterPills();
+  loadSettings();
+});
+
+// ===== INDEXEDDB =====
+let db;
+function initIndexedDB() {
+  const req = indexedDB.open('polywatch_v3', 3);
+  req.onupgradeneeded = (e) => {
+    const d = e.target.result;
+    if (!d.objectStoreNames.contains('alerts')) d.createObjectStore('alerts', { keyPath: 'id' });
+    if (!d.objectStoreNames.contains('wallets')) d.createObjectStore('wallets', { keyPath: 'address' });
+    if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings', { keyPath: 'key' });
+  };
+  req.onsuccess = (e) => {
+    db = e.target.result;
+    loadAlertsFromDB();
+  };
+}
+
+function dbPut(store, data) {
+  if (!db) return;
+  const tx = db.transaction(store, 'readwrite');
+  tx.objectStore(store).put(data);
+}
+
+function loadAlertsFromDB() {
+  if (!db) return;
+  const tx = db.transaction('alerts', 'readonly');
+  const req = tx.objectStore('alerts').getAll();
+  req.onsuccess = (e) => {
+    const saved = e.target.result || [];
+    if (saved.length) {
+      saved.forEach(a => {
+        sessionAlerts.unshift(a);
+        updateWalletData(a);
+      });
+      renderAlerts();
+      updateStats();
+      updateLiveBadge();
+      updatePatternCounters();
+    }
+  };
+}
+
+function saveAlertToDB(alert) {
+  dbPut('alerts', alert);
+}
+
+function loadSettings() {
+  if (!db) return;
+  const tx = db.transaction('settings', 'readonly');
+  const req = tx.objectStore('settings').getAll();
+  req.onsuccess = (e) => {
+    (e.target.result || []).forEach(s => {
+      if (s.key === 'email') { alertEmail = s.value; document.getElementById('alert-email').value = s.value; }
+      if (s.key === 'mode') { alertMode = s.value; setAlertMode(s.value, false); }
+      if (s.key === 'webhook') { document.getElementById('webhook-url').value = s.value; }
+    });
+  };
+}
+
+// ===== SUPABASE =====
+function initSupabase() {
+  try {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    pingSupabase();
+  } catch(e) {
+    setDBStatus(false);
+  }
+}
+
+async function pingSupabase() {
+  try {
+    const { data, error } = await supabaseClient.from('scrape_runs').select('id').limit(1);
+    if (error) throw error;
+    setDBStatus(true);
+  } catch(e) {
+    setDBStatus(false);
+  }
+}
+
+function setDBStatus(online) {
+  const dot = document.getElementById('db-dot');
+  const lbl = document.getElementById('db-status');
+  dot.className = 'db-dot ' + (online ? 'online' : 'offline');
+  lbl.textContent = online ? 'DB Connected' : 'DB Offline';
+}
+
+// ===== SCORING ENGINE =====
+function scoreTradeGroup(market, trades) {
+  if (!trades || trades.length === 0) return null;
+  const now = Date.now();
+  const endMs = market.endDate ? new Date(market.endDate).getTime() : (now + 30*86400000);
+  const hoursToClose = Math.max(0, (endMs - now) / 3600000);
+  const totalSize = trades.reduce((s,t) => s + (t.size||0), 0);
+  const avgPrice = trades.reduce((s,t) => s + (t.price||0), 0) / trades.length;
+  const liquidity = market.liquidity || 10000;
+
+  // Layer 1: Size abnormality (30%)
+  const sizePct = totalSize / liquidity;
+  const sizeScore = Math.min(100, Math.round(sizePct * 300));
+
+  // Layer 2: Price impact — use spread from 0.5 midpoint (25%)
+  const priceDev = Math.abs(avgPrice - 0.5);
+  const impactScore = Math.min(100, Math.round(priceDev * 250));
+
+  // Layer 3: Timing to catalyst (20%) — peaks when < 6h to close
+  const timingScore = hoursToClose < 6 ? Math.min(100, Math.round((6 - hoursToClose) / 6 * 100))
+                    : hoursToClose < 48 ? Math.round(30 - hoursToClose * 0.5)
+                    : 10;
+
+  // Layer 4: Wallet novelty — we don't have wallet age from API directly, default 50
+  const walletScore = 50;
+
+  // Layer 5: Repeated edge — default 40 (no history in single fetch)
+  const historyScore = 40;
+
+  const composite = Math.round(
+    sizeScore * 0.30 +
+    impactScore * 0.25 +
+    timingScore * 0.20 +
+    walletScore * 0.15 +
+    historyScore * 0.10
+  );
+
+  // Pattern detection (simplified, no bonus cap exceeded)
+  const patternIds = [];
+  if (hoursToClose < 6 && trades.length >= 3) patternIds.push('jit');
+  if (sizePct > 0.1) patternIds.push('cat');
+  const bonus = Math.min(15, patternIds.length * 3);
+  const finalScore = Math.min(99, composite + bonus);
+
+  // Must pass gate: >= 3 layers > 50
+  const layers = [sizeScore, impactScore, timingScore, walletScore, historyScore];
+  const layersOver50 = layers.filter(l => l > 50).length;
+  if (finalScore < 65 || layersOver50 < 3) return null;
+
+  return {
+    id: 'alert_' + market.id + '_' + trades[0].proxyWallet + '_' + Date.now(),
+    question: market.question || trades[0].title || 'Unknown market',
+    category: market.category || 'Unknown',
+    wallet: trades[0].proxyWallet,
+    side: (trades[0].outcome || 'YES').toUpperCase(),
+    price: avgPrice,
+    tradeSize: totalSize,
+    netValue: totalSize * avgPrice,
+    score: finalScore,
+    scoreBreakdown: { size: sizeScore, impact: impactScore, timing: timingScore, wallet: walletScore, history: historyScore },
+    patternIds,
+    endDate: market.endDate || null,
+    slug: market.slug || trades[0].eventSlug || '',
+    conditionId: market.conditionId || null,
+    timestamp: (trades[0].timestamp || 0) * 1000 || Date.now(),
+    yesPrice: market.outcomePrices ? parseFloat(market.outcomePrices[0]) : avgPrice,
+  };
+}
+
+function generateSyntheticTrades() { return []; }
+
+// ===== SCAN =====
+async function manualRefresh() {
+  if (scanPaused) return;
+  setRefreshState(true);
+  try {
+    // Fetch recent trades from the global feed (no specific market)
+    const apiUrl = 'https://data-api.polymarket.com/trades?limit=200';
+    const data = await fetchWithProxyFallback(apiUrl, 8000);
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      showToast('No trade data returned — check connection');
+      setRefreshState(false);
+      return;
+    }
+    processTradeBatch(data);
+  } catch(e) {
+    showToast('Feed fetch failed: ' + e.message);
+  }
+  setRefreshState(false);
+  resetCountdown();
+}
+
+function setRefreshState(loading) {
+  const btn = document.getElementById('refresh-btn');
+  if (btn) btn.disabled = loading;
+}
+
+function processTradeBatch(trades) {
+  // Group by wallet + conditionId
+  const groups = {};
+  trades.forEach(t => {
+    const key = (t.proxyWallet||'') + '_' + (t.conditionId||'');
+    if (!groups[key]) groups[key] = { conditionId: t.conditionId, trades: [], sample: t };
+    groups[key].trades.push(t);
+  });
+
+  let newAlerts = 0;
+  Object.values(groups).forEach(g => {
+    if (g.trades.length < 1) return;
+    const market = {
+      id: g.conditionId || g.sample.conditionId,
+      conditionId: g.conditionId,
+      question: g.sample.title || 'Unknown',
+      category: detectCategory(g.sample.title || ''),
+      endDate: null,
+      outcomePrices: null,
+      volume: 0,
+      liquidity: 50000, // conservative default
+      slug: g.sample.eventSlug || g.sample.slug || '',
+    };
+    const alert = scoreTradeGroup(market, g.trades);
+    if (alert && !sessionAlerts.find(a => a.id === alert.id)) {
+      sessionAlerts.unshift(alert);
+      saveAlertToDB(alert);
+      updateWalletData(alert);
+      newAlerts++;
+    }
+  });
+
+  if (newAlerts > 0) {
+    renderAlerts();
+    updateStats();
+    updateLiveBadge();
+    updatePatternCounters();
+    if (chartsInitialized) updateCharts();
+    showToast(newAlerts + ' new flag(s) detected');
+  }
+}
+
+function detectCategory(title) {
+  const t = title.toLowerCase();
+  if (/bitcoin|btc|eth|crypto|coin/.test(t)) return 'Crypto';
+  if (/trump|biden|election|senate|congress|president|vote/.test(t)) return 'Politics';
+  if (/russia|ukraine|iran|war|military|ceasefire|nato/.test(t)) return 'Geopolitics';
+  if (/fed|rate|inflation|gdp|economy|tariff/.test(t)) return 'Economy';
+  if (/nba|nfl|soccer|sports|game|championship/.test(t)) return 'Sports';
+  if (/ai|spacex|nasa|science|tech/.test(t)) return 'Science';
+  return 'Other';
+}
+
+function updateWalletData(alert) {
+  const addr = alert.wallet;
+  if (!flaggedWallets[addr]) {
+    flaggedWallets[addr] = {
+      address: addr,
+      flags: [],
+      maxScore: 0,
+      patterns: new Set(),
+      winRate: 0,       // computed from resolved flags
+      walletAge: 0,     // unknown without on-chain lookup
+      lastActive: alert.timestamp,
+      firstSeen: alert.timestamp,
+    };
+  }
+  const w = flaggedWallets[addr];
+  w.flags.push(alert);
+  w.maxScore = Math.max(w.maxScore, alert.score);
+  alert.patternIds.forEach(p => w.patterns.add(p));
+  w.lastActive = Math.max(w.lastActive, alert.timestamp);
+  w.firstSeen = Math.min(w.firstSeen, alert.timestamp);
+}
+
+// ===== RENDER ALERTS =====
+function renderAlerts() {
+  const container = document.getElementById('alerts-container');
+  const empty = document.getElementById('empty-state');
+  let visible = sessionAlerts.filter(a => a.score >= 85);
+
+  if (activeFilter !== 'all') {
+    visible = visible.filter(a => a.patternIds.includes(activeFilter));
+  }
+
+  if (visible.length === 0) {
+    empty.style.display = 'flex';
+    // Clear all cards but keep empty state
+    Array.from(container.children).forEach(c => {
+      if (c !== empty) c.remove();
+    });
+    return;
+  }
+  empty.style.display = 'none';
+
+  // Remove old cards
+  Array.from(container.children).forEach(c => {
+    if (c !== empty && !c.dataset.newCard) c.remove();
+  });
+
+  // Render up to 50 most recent
+  const toShow = visible.slice(0, 50);
+  // Rebuild container (simple approach)
+  const frag = document.createDocumentFragment();
+  frag.appendChild(empty);
+  toShow.forEach(alert => {
+    frag.appendChild(buildAlertCard(alert));
+  });
+  container.innerHTML = '';
+  container.appendChild(frag);
+  empty.style.display = 'none';
+}
+
+function buildAlertCard(alert) {
+  const el = document.createElement('div');
+  el.className = 'alert-card ' + (alert.score >= 90 ? 'extreme' : 'high');
+  el.dataset.alertId = alert.id;
+
+  const scoreClass = alert.score >= 90 ? 'score-extreme' : 'score-high';
+  const patternsHTML = alert.patternIds.map(pid => {
+    const p = PATTERN_DEFS.find(x => x.id===pid);
+    return p ? `<span class="tag ${p.tagClass}">${p.name.split(' ')[0]}</span>` : '';
+  }).join('');
+
+  const timeAgo = formatTimeAgo(alert.timestamp);
+  const notional = '$' + Math.round(alert.netValue).toLocaleString() + ' USDC';
+
+  el.innerHTML = `
+    <div class="alert-header" onclick="toggleAlertCard('${alert.id}')">
+      <div class="alert-score ${scoreClass}">${alert.score}</div>
+      <div class="alert-meta">
+        <div class="alert-market">${escHtml(alert.question)}</div>
+        <div class="alert-tags">
+          <span class="tag tag-cat">${escHtml(alert.category)}</span>
+          <span class="tag ${alert.side === 'YES' ? 'tag-yes' : 'tag-no'}">${alert.side}</span>
+          ${patternsHTML}
+        </div>
+      </div>
+      <div class="alert-right">
+        <span class="alert-time">${timeAgo}</span>
+        <span class="alert-value">${notional}</span>
+        <span class="chevron" id="chev-${alert.id}">▾</span>
+      </div>
+    </div>
+    <div class="alert-body" id="body-${alert.id}">
+      <div class="score-bars">
+        ${buildScoreBars(alert)}
+      </div>
+      <div class="alert-actions">
+        <button class="btn btn-primary btn-sm" onclick="openDrillDown('${alert.id}','flag')">
+          🔍 View Bets in this Flag
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="sendEmailAlert('${alert.id}')">
+          ✉ Email Alert
+        </button>
+      </div>
+    </div>
+  `;
+  return el;
+}
+
+function buildScoreBars(alert) {
+  const layers = [
+    { label: 'Size Abnormality (30%)', val: alert.scoreBreakdown.size },
+    { label: 'Price Impact (25%)', val: alert.scoreBreakdown.impact },
+    { label: 'Timing to Catalyst (20%)', val: alert.scoreBreakdown.timing },
+    { label: 'Wallet Novelty (15%)', val: alert.scoreBreakdown.wallet },
+    { label: 'Repeated Edge (10%)', val: alert.scoreBreakdown.history },
+  ];
+  return layers.map(l => {
+    const fillClass = l.val >= 85 ? 'extreme-fill' : l.val >= 65 ? 'high-fill' : '';
+    return `
+      <div class="score-bar-row">
+        <div class="score-bar-label">${l.label}</div>
+        <div class="score-bar-track">
+          <div class="score-bar-fill ${fillClass}" style="width:${l.val}%"></div>
+        </div>
+        <div class="score-bar-val">${l.val}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleAlertCard(id) {
+  const body = document.getElementById('body-' + id);
+  const chev = document.getElementById('chev-' + id);
+  if (!body) return;
+  body.classList.toggle('open');
+  if (chev) chev.classList.toggle('open');
+}
+
+// ===== FILTER PILLS =====
+function setupFilterPills() {
+  document.querySelectorAll('.pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      activeFilter = pill.dataset.filter;
+      renderAlerts();
+    });
+  });
+}
+
+// ===== COUNTDOWN =====
+function startCountdown() {
+  countdownTimer = setInterval(() => {
+    if (scanPaused) return;
+    countdownSecs--;
+    if (countdownSecs <= 0) {
+      countdownSecs = 30;
+      manualRefresh();
+    }
+    document.getElementById('countdown').textContent = countdownSecs + 's';
+  }, 1000);
+}
+
+function resetCountdown() {
+  countdownSecs = 30;
+  document.getElementById('countdown').textContent = countdownSecs + 's';
+}
+
+function togglePause() {
+  scanPaused = !scanPaused;
+  const btn = document.getElementById('pause-btn');
+  btn.textContent = scanPaused ? '▶ Resume' : '⏸ Pause';
+  btn.className = scanPaused ? 'btn btn-amber btn-sm' : 'btn btn-secondary btn-sm';
+}
+
+// ===== STATS =====
+function updateStats() {
+  const extreme = sessionAlerts.filter(a => a.score >= 90).length;
+  const high = sessionAlerts.filter(a => a.score >= 85 && a.score < 90).length;
+  document.getElementById('stat-extreme').textContent = extreme;
+  document.getElementById('stat-high').textContent = high;
+  document.getElementById('stat-total').textContent = sessionAlerts.length;
+}
+
+function updateLiveBadge() {
+  document.getElementById('live-badge').textContent = sessionAlerts.filter(a=>a.score>=85).length;
+}
+
+function updatePatternCounters() {
+  patternCounters = { cal:0, sybil:0, dorm:0, cat:0, user:0, jit:0 };
+  sessionAlerts.forEach(a => {
+    a.patternIds.forEach(pid => {
+      if (patternCounters.hasOwnProperty(pid)) patternCounters[pid]++;
+    });
+  });
+  // Update pattern cards
+  PATTERN_DEFS.forEach(p => {
+    const el = document.getElementById('pattern-counter-' + p.id);
+    if (el) el.textContent = patternCounters[p.id];
+    // Update wallet list for this pattern
+    renderPatternWallets(p.id);
+  });
+}
+
+// ===== TAB NAVIGATION =====
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const tab = item.dataset.tab;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('topbar-title').textContent = item.textContent.trim();
+
+    if (tab === 'analytics' && !chartsInitialized) {
+      setTimeout(initCharts, 100);
+    }
+    if (tab === 'wallet-watch') renderWalletTable();
+  });
+});
+
+// ===== PATTERNS TAB =====
+function renderPatterns() {
+  const grid = document.getElementById('patterns-grid');
+  grid.innerHTML = '';
+  PATTERN_DEFS.forEach(p => {
+    const card = document.createElement('div');
+    card.className = `pattern-card p-${p.id}`;
+    card.innerHTML = `
+      <div class="pattern-header">
+        <div class="pattern-name">${escHtml(p.name)}</div>
+        <div class="pattern-counter" id="pattern-counter-${p.id}">0</div>
+      </div>
+      <div class="pattern-source">${escHtml(p.source)}</div>
+      <ul class="pattern-signals">
+        ${p.signals.map(s => `
+          <li class="pattern-signal">
+            <span>${escHtml(s.text)}</span>
+            <span class="signal-threshold">${escHtml(s.threshold)}</span>
+          </li>
+        `).join('')}
+      </ul>
+      <div class="pattern-wallets">
+        <div class="pattern-wallets-label">Wallets firing this pattern</div>
+        <div id="pattern-wallets-${p.id}"><span class="pattern-no-wallets">None yet</span></div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function renderPatternWallets(patternId) {
+  const el = document.getElementById('pattern-wallets-' + patternId);
+  if (!el) return;
+  const wallets = Object.values(flaggedWallets).filter(w => w.patterns.has(patternId));
+  if (wallets.length === 0) {
+    el.innerHTML = '<span class="pattern-no-wallets">None yet</span>';
+    return;
+  }
+  el.innerHTML = wallets.slice(0,6).map(w => `
+    <span class="pattern-wallet-link" onclick="openDrillDown('${w.address}','wallet')">${truncateWallet(w.address)}</span>
+  `).join('');
+}
+
+// ===== BACKSCRAPE =====
+let bsStopped = false;
+let bsAbortController = null;
+
+function startBackscrape() {
+  if (backscrapeRunning) return;
+  backscrapeRunning = true;
+  bsStopped = false;
+  bsAbortController = new AbortController();
+  document.getElementById('bs-start-btn').disabled = true;
+  document.getElementById('bs-stop-btn').disabled = false;
+  document.getElementById('bs-status-text').textContent = 'Running…';
+  document.getElementById('bs-progress').style.width = '0%';
+  document.getElementById('bs-results-body').innerHTML = '';
+  document.getElementById('bs-result-count').textContent = '0 markets scanned';
+  const log = document.getElementById('bs-log');
+  log.textContent = '';
+
+  const depth = parseInt(document.getElementById('bs-depth').value) || 200;
+  const minScore = parseInt(document.getElementById('bs-min-score').value) || 65;
+  const category = document.getElementById('bs-category').value;
+
+  function appendLog(msg) {
+    log.textContent += msg + '\n';
+    log.scrollTop = log.scrollHeight;
+  }
+
+  appendLog(`[${ts()}] Fetching real markets from gamma-api (depth=${depth})…`);
+  runRealBackscrape(depth, minScore, category, appendLog);
+}
+
+async function runRealBackscrape(depth, minScore, category, appendLog) {
+  const pageSize = 100;
+  let offset = 0;
+  let processed = 0;
+  const results = [];
+  const total = Math.min(depth, 500);
+
+  while (!bsStopped && processed < total) {
+    const limit = Math.min(pageSize, total - processed);
+    const marketApiUrl = `https://gamma-api.polymarket.com/markets?closed=false&limit=${limit}&offset=${offset}`;
+    appendLog(`[${ts()}] Fetching markets offset=${offset}…`);
+
+    let markets = null;
+    try {
+      markets = await fetchWithProxyFallback(marketApiUrl, 10000);
+    } catch(e) {}
+
+    if (!markets || !Array.isArray(markets) || markets.length === 0) {
+      appendLog(`[${ts()}] No more markets returned at offset=${offset}`);
+      break;
+    }
+
+    for (let i = 0; i < markets.length && !bsStopped; i++) {
+      const m = markets[i];
+      processed++;
+      const pct = Math.round((processed / total) * 100);
+      document.getElementById('bs-progress').style.width = pct + '%';
+      document.getElementById('bs-result-count').textContent = processed + ' markets scanned';
+
+      // Filter by category if set
+      if (category !== 'all') {
+        const detectedCat = detectCategory(m.question || '');
+        if (detectedCat.toLowerCase() !== category.toLowerCase()) continue;
+      }
+
+      const conditionId = m.conditionId || m.id;
+      if (!conditionId) continue;
+
+      // Fetch recent trades for this market
+      const tradesUrl = `https://data-api.polymarket.com/trades?market=${conditionId}&limit=100`;
+      let trades = null;
+      try {
+        trades = await fetchWithProxyFallback(tradesUrl, 8000);
+      } catch(e) {}
+
+      if (!trades || !Array.isArray(trades) || trades.length === 0) continue;
+
+      // Group trades by wallet, score each group
+      const byWallet = {};
+      trades.forEach(t => {
+        const w = t.proxyWallet;
+        if (!w) return;
+        if (!byWallet[w]) byWallet[w] = [];
+        byWallet[w].push(t);
+      });
+
+      const market = {
+        id: m.id || conditionId,
+        conditionId,
+        question: m.question || m.title || 'Unknown',
+        category: detectCategory(m.question || ''),
+        endDate: m.endDate || m.endDateIso || null,
+        outcomePrices: m.outcomePrices || null,
+        volume: m.volume || 0,
+        liquidity: m.liquidity || m.volumeNum || 50000,
+        slug: m.slug || '',
+      };
+
+      const marketFlags = [];
+      Object.values(byWallet).forEach(walletTrades => {
+        const alert = scoreTradeGroup(market, walletTrades);
+        if (alert && alert.score >= minScore) {
+          marketFlags.push(alert);
+          sessionAlerts.unshift(alert);
+          saveAlertToDB(alert);
+          updateWalletData(alert);
+        }
+      });
+
+      if (marketFlags.length > 0) {
+        const topScore = Math.max(...marketFlags.map(a => a.score));
+        appendLog(`[${ts()}] ⚠ ${marketFlags.length} flag(s) in: ${(market.question||'').substring(0,50)}…`);
+        renderBsSingleRow({
+          q: market.question,
+          cat: market.category,
+          trades: trades.length,
+          numFlags: marketFlags.length,
+          topScore,
+          flags: marketFlags,
+        });
+        renderAlerts();
+        updateStats();
+        updateLiveBadge();
+        updatePatternCounters();
+        if (chartsInitialized) updateCharts();
+      } else {
+        if (processed % 10 === 0) appendLog(`[${ts()}] Scanned ${processed}/${total} — no flags`);
+      }
+
+      // Small delay to avoid hammering the API
+      await new Promise(r => setTimeout(r, 300));
+    }
+
+    offset += markets.length;
+    if (markets.length < pageSize) break;
+  }
+
+  finishScrape(processed, results);
+}
+
+function renderBsSingleRow(row) {
+  const tbody = document.getElementById('bs-results-body');
+  const tr = document.createElement('tr');
+  const scoreClass = row.topScore >= 90 ? 'score-extreme-label' : 'score-high-label';
+  tr.innerHTML = `
+    <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(row.q)}">${escHtml((row.q||'').substring(0,55))}${(row.q||'').length>55?'…':''}</td>
+    <td>${escHtml(row.cat)}</td>
+    <td class="mono">${row.trades}</td>
+    <td class="mono">${row.numFlags}</td>
+    <td class="mono ${scoreClass}">${row.topScore}</td>
+    <td><button class="btn btn-secondary btn-xs" onclick="showBsFlags(this)" data-flags='${JSON.stringify(row.flags.map(f=>f.id))}'>View Flags</button></td>
+  `;
+  tbody.insertBefore(tr, tbody.firstChild);
+}
+
+function showBsFlags(btn) {
+  const flagIds = JSON.parse(btn.dataset.flags);
+  const flags = flagIds.map(id => sessionAlerts.find(a=>a.id===id)).filter(Boolean);
+  if (!flags.length) { showToast('No flag data found'); return; }
+  openDrillDown(flags[0].id, 'flag');
+}
+
+function stopBackscrape() {
+  bsStopped = true;
+  if (bsAbortController) bsAbortController.abort();
+  if (backscrapeTimeout) clearTimeout(backscrapeTimeout);
+  finishScrape(0, []);
+}
+
+function finishScrape(processed, results) {
+  backscrapeRunning = false;
+  document.getElementById('bs-start-btn').disabled = false;
+  document.getElementById('bs-stop-btn').disabled = true;
+  document.getElementById('bs-status-text').textContent = bsStopped ? 'Stopped' : 'Complete';
+  const log = document.getElementById('bs-log');
+  log.textContent += `[${ts()}] Scrape ${bsStopped?'stopped':'complete'}: ${processed} markets, ${results.length} with flags\n`;
+  updateStats();
+  updateLiveBadge();
+  updatePatternCounters();
+  if (chartsInitialized) updateCharts();
+}
+
+function ts() {
+  return new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+// ===== WALLET WATCH TAB =====
+function renderWalletTable() {
+  const tbody = document.getElementById('wallet-table-body');
+  const wallets = Object.values(flaggedWallets);
+  if (wallets.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:24px;font-size:12px;">No flagged wallets yet — run a scan</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '';
+  wallets.sort((a,b) => b.maxScore - a.maxScore).forEach(w => {
+    const tr = document.createElement('tr');
+    tr.className = 'wallet-row';
+    tr.onclick = () => openDrillDown(w.address, 'wallet');
+    const patterns = Array.from(w.patterns).map(pid => {
+      const p = PATTERN_DEFS.find(x=>x.id===pid);
+      return p ? `<span class="tag ${p.tagClass}">${p.id.toUpperCase()}</span>` : '';
+    }).join('');
+    const scoreClass = w.maxScore >= 90 ? 'score-extreme-label' : 'score-high-label';
+    tr.innerHTML = `
+      <td class="wallet-address-cell">${truncateWallet(w.address)}</td>
+      <td class="mono">${w.flags.length}</td>
+      <td class="mono ${scoreClass}">${w.maxScore}</td>
+      <td class="mono">${Math.round(w.winRate*100)}%</td>
+      <td class="mono">${w.walletAge}d</td>
+      <td style="max-width:140px">${patterns}</td>
+      <td class="mono" style="font-size:11px">${formatTimeAgo(w.lastActive)}</td>
+      <td><button class="btn btn-primary btn-xs" onclick="event.stopPropagation();openDrillDown('${w.address}','wallet')">🔍 View Bets</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function exportWalletCSV() {
+  const wallets = Object.values(flaggedWallets);
+  if (!wallets.length) { showToast('No wallet data to export'); return; }
+  const headers = ['Wallet','Flags','MaxScore','WinRate','WalletAge','Patterns','LastActive'];
+  const rows = wallets.map(w => [
+    w.address,
+    w.flags.length,
+    w.maxScore,
+    Math.round(w.winRate*100)+'%',
+    w.walletAge+'d',
+    Array.from(w.patterns).join(';'),
+    new Date(w.lastActive).toISOString(),
+  ]);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'polywatch_wallets_' + Date.now() + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exported');
+}
+
+// ===== ANALYTICS CHARTS =====
+let charts = {};
+
+function initCharts() {
+  chartsInitialized = true;
+
+  // Chart 1: Hourly volume
+  const ctxH = document.getElementById('chart-hourly').getContext('2d');
+  const hours = Array.from({length:12}, (_,i) => {
+    const d = new Date(Date.now() - (11-i)*3600000);
+    return d.getHours() + ':00';
+  });
+  charts.hourly = new Chart(ctxH, {
+    type: 'bar',
+    data: {
+      labels: hours,
+      datasets: [{
+        label: 'Alerts',
+        data: Array(12).fill(0),
+        backgroundColor: '#7a9e7e',
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: false,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: 'rgba(44,40,37,0.07)' }, ticks: { font: { family: 'DM Mono', size: 10 } } },
+        x: { grid: { display: false }, ticks: { font: { family: 'DM Mono', size: 10 } } },
+      }
+    }
+  });
+  document.getElementById('chart-hourly').width = document.getElementById('chart-hourly').parentElement.offsetWidth;
+  document.getElementById('chart-hourly').height = 200;
+
+  // Chart 2: Score distribution
+  const ctxS = document.getElementById('chart-score').getContext('2d');
+  charts.score = new Chart(ctxS, {
+    type: 'bar',
+    data: {
+      labels: ['50-59','60-69','70-79','80-84','85-89','90-94','95-99'],
+      datasets: [{
+        label: 'Count',
+        data: [0,0,0,0,0,0,0],
+        backgroundColor: ['#7a9e7e','#7a9e7e','#7a9e7e','#c8973a','#c8973a','#8b3a52','#8b3a52'],
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: false,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: 'rgba(44,40,37,0.07)' }, ticks: { font: { family: 'DM Mono', size: 10 } } },
+        x: { grid: { display: false }, ticks: { font: { family: 'DM Mono', size: 10 } } },
+      }
+    }
+  });
+
+  // Chart 3: Pattern doughnut
+  const ctxP = document.getElementById('chart-pattern').getContext('2d');
+  charts.pattern = new Chart(ctxP, {
+    type: 'doughnut',
+    data: {
+      labels: PATTERN_DEFS.map(p => p.name.split(' ').slice(0,2).join(' ')),
+      datasets: [{
+        data: PATTERN_DEFS.map(p => 0),
+        backgroundColor: PATTERN_DEFS.map(p => p.color),
+        borderWidth: 2,
+        borderColor: '#ede8e0',
+      }]
+    },
+    options: {
+      responsive: false,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { font: { family: 'DM Sans', size: 10 }, boxWidth: 12, padding: 8 } }
+      },
+      cutout: '60%',
+    }
+  });
+
+  // Chart 4: Category horizontal bar
+  const ctxC = document.getElementById('chart-category').getContext('2d');
+  charts.category = new Chart(ctxC, {
+    type: 'bar',
+    data: {
+      labels: MARKET_CATEGORIES,
+      datasets: [{
+        label: 'Risk Score',
+        data: MARKET_CATEGORIES.map(() => 0),
+        backgroundColor: '#c8973a',
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: false,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(44,40,37,0.07)' }, max: 100, ticks: { font: { family: 'DM Mono', size: 10 } } },
+        y: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 10 } } },
+      }
+    }
+  });
+
+  // Set canvas sizes
+  Object.values(charts).forEach(c => {
+    if (c.canvas) {
+      c.canvas.style.width = '100%';
+      c.canvas.style.height = '200px';
+    }
+  });
+}
+
+function updateCharts() {
+  if (!chartsInitialized) return;
+  // Update pattern doughnut
+  if (charts.pattern) {
+    charts.pattern.data.datasets[0].data = PATTERN_DEFS.map(p => patternCounters[p.id] || 0);
+    charts.pattern.update();
+  }
+  // Update hourly (append latest hour)
+  if (charts.hourly) {
+    const data = charts.hourly.data.datasets[0].data;
+    data[data.length-1] = sessionAlerts.filter(a => {
+      return Date.now() - a.timestamp < 3600000;
+    }).length;
+    charts.hourly.update();
+  }
+}
+
+// ===== GMAIL ALERTS =====
+function setAlertMode(mode, save=true) {
+  alertMode = mode;
+  document.getElementById('mode-immediate').classList.toggle('active', mode === 'immediate');
+  document.getElementById('mode-digest').classList.toggle('active', mode === 'digest');
+  if (save) dbPut('settings', {key:'mode', value:mode});
+}
+
+document.getElementById('alert-email').addEventListener('input', (e) => {
+  alertEmail = e.target.value;
+  dbPut('settings', {key:'email', value:alertEmail});
+});
+
+function openGmailCompose() {
+  const email = document.getElementById('alert-email').value || '';
+  const mode = alertMode === 'immediate' ? 'Immediate (85+)' : 'Digest (4h · 75+)';
+  const subject = encodeURIComponent('PolyWatch Alert — ' + mode + ' — ' + new Date().toLocaleDateString());
+  const recent = sessionAlerts.slice(0,3);
+  const bodyLines = [
+    'PolyWatch V3 — Insider Bet Anomaly Alert',
+    '=========================================',
+    '',
+    'Mode: ' + mode,
+    'Generated: ' + new Date().toLocaleString(),
+    '',
+    'RECENT EXTREME FLAGS:',
+    '',
+    ...recent.map(a => [
+      `Score: ${a.score} | ${a.side} | $${Math.round(a.netValue).toLocaleString()} USDC`,
+      `Market: ${a.question}`,
+      `Wallet: ${a.wallet}`,
+      `Polymarket: https://polymarket.com/event/${a.slug}`,
+      `Patterns: ${a.patternIds.join(', ')}`,
+      '',
+    ]).flat(),
+    '---',
+    'This alert was generated by PolyWatch V3.',
+  ];
+  const body = encodeURIComponent(bodyLines.join('\n'));
+  const gmailUrl = `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(email)}&su=${subject}&body=${body}`;
+  window.open(gmailUrl, '_blank', 'noopener noreferrer');
+  showToast('Opening Gmail compose…');
+  alertHistory.push({ time: new Date().toLocaleTimeString(), mode, count: recent.length });
+  renderAlertHistory();
+}
+
+function sendEmailAlert(alertId) {
+  const alert = sessionAlerts.find(a=>a.id===alertId);
+  if (!alert) return;
+  const email = document.getElementById('alert-email').value || '';
+  const subject = encodeURIComponent(`PolyWatch Alert — Score ${alert.score} — ${alert.question.substring(0,40)}`);
+  const body = encodeURIComponent([
+    `PolyWatch V3 Alert — Score: ${alert.score}`,
+    '',
+    `Market: ${alert.question}`,
+    `Category: ${alert.category}`,
+    `Side: ${alert.side} at ${Math.round(alert.price*100)}%`,
+    `Size: ${alert.tradeSize.toLocaleString()} shares`,
+    `Notional: $${Math.round(alert.netValue).toLocaleString()} USDC`,
+    `Wallet: ${alert.wallet}`,
+    `Patterns: ${alert.patternIds.join(', ')}`,
+    '',
+    `View on Polymarket: https://polymarket.com/event/${alert.slug}`,
+    '',
+    'Generated by PolyWatch V3',
+  ].join('\n'));
+  window.open(`https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(email)}&su=${subject}&body=${body}`, '_blank', 'noopener noreferrer');
+  showToast('Opening Gmail for this alert…');
+}
+
+async function testWebhook() {
+  const url = document.getElementById('webhook-url').value.trim();
+  const statusEl = document.getElementById('webhook-status');
+  if (!url) { statusEl.textContent = '⚠ Enter a webhook URL first.'; return; }
+  statusEl.textContent = 'Sending test payload…';
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: 'polywatch_v3', type: 'test', timestamp: Date.now() }),
+    });
+    statusEl.textContent = '✓ Test payload sent (no-cors mode — check your Apps Script logs).';
+    dbPut('settings', {key:'webhook', value:url});
+  } catch(e) {
+    statusEl.textContent = '✗ Failed: ' + e.message;
+  }
+}
+
+function renderAlertHistory() {
+  const el = document.getElementById('alert-history');
+  if (!alertHistory.length) { el.innerHTML = '<span style="font-size:12px;color:var(--text-dim);font-style:italic">No alerts sent this session.</span>'; return; }
+  el.innerHTML = alertHistory.slice(-8).reverse().map(h => `
+    <div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;display:flex;gap:12px">
+      <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">${h.time}</span>
+      <span>${h.mode}</span>
+      <span style="color:var(--text-dim)">${h.count} alert(s)</span>
+    </div>
+  `).join('');
+}
+
+// ===== METHODOLOGY =====
+function renderMethodology() {
+  // Score layers
+  const container = document.getElementById('score-layers-container');
+  SCORE_LAYERS.forEach((l,i) => {
+    const card = document.createElement('div');
+    card.className = 'score-layer-card';
+    card.innerHTML = `
+      <div class="score-layer-header" onclick="toggleMethodLayer(${i})">
+        <div class="score-layer-weight">${l.weight}</div>
+        <div class="score-layer-name">${l.name}</div>
+        <span class="chevron" id="ml-chev-${i}">▾</span>
+      </div>
+      <div class="score-layer-body" id="ml-body-${i}">${l.desc}</div>
+    `;
+    container.appendChild(card);
+  });
+
+  // Pattern mini-cards
+  const grid = document.getElementById('method-patterns-grid');
+  PATTERN_DEFS.forEach(p => {
+    const card = document.createElement('div');
+    card.className = `method-pattern-card p-${p.id}`;
+    card.style.borderLeftColor = p.color;
+    card.innerHTML = `
+      <div class="method-pattern-name">${escHtml(p.name)}</div>
+      <div class="method-pattern-threshold">${escHtml(p.signals[0].threshold)} · +3 pts</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:4px">${escHtml(p.source)}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function toggleMethodLayer(i) {
+  const body = document.getElementById('ml-body-' + i);
+  const chev = document.getElementById('ml-chev-' + i);
+  body.classList.toggle('open');
+  if (chev) chev.classList.toggle('open');
+}
+
+// ===== DRILL-DOWN PANEL =====
+let currentDrillType = null; // 'flag' or 'wallet'
+let currentDrillId = null;
+
+function openDrillDown(id, type) {
+  currentDrillId = id;
+  currentDrillType = type;
+
+  const panel = document.getElementById('drill-panel');
+  const backdrop = document.getElementById('drill-backdrop');
+  const title = document.getElementById('drill-panel-title');
+  const body = document.getElementById('drill-panel-body');
+
+  // Show loading
+  body.innerHTML = '<div class="drill-spinner"><div class="spinner-ring"></div> Loading trade data…</div>';
+
+  if (type === 'flag') {
+    const alert = sessionAlerts.find(a => a.id === id);
+    if (!alert) { showToast('Alert not found'); return; }
+    title.textContent = alert.question;
+    loadFlagDrillDown(alert, body);
+  } else if (type === 'wallet') {
+    const wallet = flaggedWallets[id];
+    if (!wallet) { showToast('Wallet not found'); return; }
+    title.textContent = 'Wallet ' + truncateWallet(id);
+    loadWalletDrillDown(wallet, body);
+  }
+
+  panel.classList.add('open');
+  backdrop.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDrillPanel() {
+  document.getElementById('drill-panel').classList.remove('open');
+  document.getElementById('drill-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// CORS proxy chain — tries each in order until one works
+const CORS_PROXIES = [
+  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://thingproxy.freeboard.io/fetch/${url}`,
+];
+
+async function fetchWithProxyFallback(apiUrl, timeout = 6000) {
+  for (const proxyFn of CORS_PROXIES) {
+    try {
+      const res = await Promise.race([
+        fetch(proxyFn(apiUrl), { headers: { 'Accept': 'application/json' } }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), timeout))
+      ]);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
+      }
+    } catch(e) { /* try next proxy */ }
+  }
+  return null;
+}
+
+// Flag drill-down: fetch real trades for this wallet + market
+async function loadFlagDrillDown(alert, bodyEl) {
+  let trades = null;
+  let source = 'unavailable';
+
+  // Check sessionStorage cache (keyed by wallet + market)
+  const cacheKey = 'trades_' + (alert.conditionId || '') + '_' + (alert.wallet || '');
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached) {
+    try { trades = JSON.parse(cached); source = 'cached'; } catch(e) {}
+  }
+
+  if (!trades && alert.conditionId) {
+    // Try wallet-scoped query first (most precise), then market-only
+    const walletUrl = alert.wallet
+      ? `https://data-api.polymarket.com/trades?market=${alert.conditionId}&user=${alert.wallet}&limit=50`
+      : null;
+    const marketUrl = `https://data-api.polymarket.com/trades?market=${alert.conditionId}&limit=100`;
+
+    if (walletUrl) {
+      const data = await fetchWithProxyFallback(walletUrl);
+      if (data && data.length > 0) { trades = data; source = 'live'; }
+    }
+    if (!trades) {
+      const data = await fetchWithProxyFallback(marketUrl);
+      if (data && data.length > 0) {
+        // Filter to flagged wallet; if none match show all trades for this market
+        const walletTrades = alert.wallet ? data.filter(t => t.proxyWallet === alert.wallet) : [];
+        trades = walletTrades.length > 0 ? walletTrades : data.slice(0, 10);
+        source = 'live';
+      }
+    }
+    if (trades) sessionStorage.setItem(cacheKey, JSON.stringify(trades));
+  }
+
+  if (!trades || trades.length === 0) {
+    trades = [];
+    source = 'unavailable';
+  }
+
+  renderFlagDrillPanel(alert, trades, source, bodyEl);
+}
+
+function renderFlagDrillPanel(alert, trades, source, bodyEl) {
+  const totalNotional = trades.reduce((sum, t) => sum + ((t.size||0) * (t.price||0)), 0);
+  const endDateStr = alert.endDate ? formatDateHuman(new Date(alert.endDate)) : 'Unknown';
+  const yesPrice = alert.yesPrice ? Math.round(alert.yesPrice * 100) + '%' : (Math.round((alert.price||0) * 100) + '%');
+  const sourceLabel = source === 'live' ? '&#x1F7E2; Live data' : source === 'cached' ? '&#x1F535; Cached' : '&#x26AA; No trade data (no conditionId)';
+
+  // Best emulate target: most recent trade direction, or alert's own side
+  const latestTrade = trades[0];
+  const emulateOutcome = latestTrade ? (latestTrade.outcome || 'Yes') : (alert.side || 'Yes');
+  const emulatePrice = latestTrade ? Math.round((latestTrade.price||alert.price||0.5)*100) : Math.round((alert.price||0.5)*100);
+  const emulateSize = latestTrade ? Math.round(latestTrade.size||0) : Math.round(alert.netValue||0);
+  const marketUrl = `https://polymarket.com/event/${alert.slug || ''}`;
+
+  bodyEl.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="drill-section-label">Trade History</div>
+      <span style="font-size:10px;font-family:'DM Mono',monospace;color:rgba(245,240,235,0.4)">${sourceLabel}</span>
+    </div>
+    <div id="drill-trades-list">
+      ${trades.map(t => renderBetRow(t, alert)).join('')}
+    </div>
+    <div class="drill-total-row">
+      <span>Total notional</span>
+      <span class="drill-total-val">$${Math.round(totalNotional).toLocaleString()} USDC</span>
+    </div>
+    <hr class="panel-divider">
+    <div class="drill-section-label" style="margin-bottom:8px">Emulate This Bet</div>
+    <div style="background:rgba(122,158,126,0.1);border:1px solid rgba(122,158,126,0.25);border-radius:8px;padding:12px;margin-bottom:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="text-align:center">
+          <div style="font-size:10px;color:rgba(245,240,235,0.45);margin-bottom:3px">Direction</div>
+          <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:${emulateOutcome.toLowerCase()==='yes'?'#7a9e7e':'#c8394b'}">${emulateOutcome.toUpperCase()}</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:10px;color:rgba(245,240,235,0.45);margin-bottom:3px">Price</div>
+          <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:#f5f0eb">${emulatePrice}&cent;</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:10px;color:rgba(245,240,235,0.45);margin-bottom:3px">Size</div>
+          <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:#f5f0eb">${emulateSize.toLocaleString()} sh</div>
+        </div>
+      </div>
+      <a href="${marketUrl}" target="_blank" rel="noreferrer noopener"
+         class="btn btn-primary btn-sm" style="width:100%;justify-content:center;text-decoration:none;display:flex">
+        ↗ Open Market &amp; Place Bet
+      </a>
+    </div>
+    <hr class="panel-divider">
+    <div class="drill-wallet-info">
+      <div class="drill-wallet-row">
+        <span class="drill-wallet-key">Wallet</span>
+        <span class="drill-wallet-val" onclick="copyToClipboard('${alert.wallet}')" title="Click to copy">${truncateWallet(alert.wallet)}</span>
+      </div>
+      <div class="drill-copy-hint">Click address to copy full</div>
+      ${alert.wallet ? `
+      <div class="drill-wallet-row" style="margin-top:6px">
+        <a href="https://polymarket.com/profile/${alert.wallet}" target="_blank" rel="noreferrer noopener"
+           style="font-size:11px;color:rgba(245,240,235,0.5);text-decoration:none" onmouseover="this.style.color='#7a9e7e'" onmouseout="this.style.color='rgba(245,240,235,0.5)'">
+          &#x2197; View wallet on Polymarket &rarr;
+        </a>
+      </div>` : ''}
+      <div class="drill-wallet-row" style="margin-top:8px">
+        <span class="drill-wallet-key">Market closes</span>
+        <span class="drill-wallet-val" style="cursor:default">${endDateStr}</span>
+      </div>
+      <div class="drill-wallet-row">
+        <span class="drill-wallet-key">Current YES price</span>
+        <span class="drill-wallet-val" style="cursor:default">${yesPrice}</span>
+      </div>
+      <div class="drill-wallet-row">
+        <span class="drill-wallet-key">Anomaly score</span>
+        <span class="drill-wallet-val" style="cursor:default;color:${alert.score>=90?'#d4849a':'#e8b96a'}">${alert.score}</span>
+      </div>
+    </div>
+    <hr class="panel-divider">
+    <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="sendEmailAlert('${alert.id}')">
+      &#x2709; Email This Alert
+    </button>
+  `;
+}
+
+function renderBetRow(t, alert) {
+  const outcome = t.outcome || 'Unknown';
+  const side = t.side || 'BUY';
+  const size = Math.round(t.size || 1000);
+  const price = t.price || 0.6;
+  const notional = Math.round(size * price);
+  const timeAgo = t.timestamp ? formatTimeAgo(t.timestamp * (t.timestamp < 10000000000 ? 1000 : 1)) : 'recently';
+  const txHash = t.transactionHash || null;
+  // Use trade's own slug if available, fall back to alert's slug
+  const slug = t.eventSlug || t.slug || (alert ? alert.slug : '');
+  const isYes = outcome.toLowerCase() === 'yes';
+  const priceDisplay = Math.round(price * 100);
+
+  return `
+    <div class="bet-row ${isYes ? 'yes' : 'no'}">
+      <div class="bet-row-top">
+        <span class="outcome-badge ${isYes ? 'outcome-yes' : 'outcome-no'}">${outcome.toUpperCase()}</span>
+        <span class="side-badge">${side}</span>
+        <span style="font-size:10px;color:rgba(245,240,235,0.4);margin-left:auto">${timeAgo}</span>
+      </div>
+      <div class="bet-meta">
+        <span><span class="bet-meta-val">${size.toLocaleString()}</span> shares</span>
+        <span>@<span class="bet-meta-val">${priceDisplay}&cent;</span></span>
+        <span>= <span class="bet-meta-val">$${notional.toLocaleString()} USDC</span></span>
+      </div>
+      <div class="bet-links">
+        ${slug ? `<a href="https://polymarket.com/event/${escHtml(slug)}" target="_blank" rel="noreferrer noopener" class="bet-link" title="Open market to emulate this bet">&#x2197; Emulate on Polymarket</a>` : ''}
+        ${txHash ? `<a href="https://polygonscan.com/tx/${escHtml(txHash)}" target="_blank" rel="noreferrer noopener" class="bet-link">&#x1F517; On-chain TX</a>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+// Wallet drill-down: fetch real trades for this wallet across all flagged markets
+async function loadWalletDrillDown(wallet, bodyEl) {
+  const flags = wallet.flags;
+  const totalNotional = flags.reduce((s,a) => s+a.netValue, 0);
+  const scores = flags.map(a=>a.score);
+  const minScore = Math.min(...scores);
+  const maxScore = Math.max(...scores);
+  const firstSeen = formatDateHuman(new Date(wallet.firstSeen));
+  const lastSeen = formatDateHuman(new Date(wallet.lastActive));
+  const patternIds = Array.from(wallet.patterns);
+
+  // Group flags by market question
+  const byMarket = {};
+  flags.forEach(a => {
+    const key = a.conditionId || a.question;
+    if (!byMarket[key]) byMarket[key] = { question: a.question, slug: a.slug, conditionId: a.conditionId, alerts: [], category: a.category, endDate: a.endDate, tradesById: null };
+    byMarket[key].alerts.push(a);
+  });
+
+  // Fetch real trades for each unique market in parallel (wallet-scoped)
+  const marketList = Object.values(byMarket);
+  await Promise.all(marketList.map(async (market) => {
+    if (!market.conditionId) return;
+    const cacheKey = 'wt_' + market.conditionId + '_' + wallet.address;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) { try { market.tradesById = JSON.parse(cached); return; } catch(e) {} }
+    try {
+      const url = `https://data-api.polymarket.com/trades?market=${market.conditionId}&user=${wallet.address}&limit=50`;
+      const data = await fetchWithProxyFallback(url, 5000);
+      if (data && data.length > 0) {
+        market.tradesById = data;
+        sessionStorage.setItem(cacheKey, JSON.stringify(data));
+      }
+    } catch(e) {}
+  }));
+
+  const patternsHtml = patternIds.map(pid => {
+    const p = PATTERN_DEFS.find(x=>x.id===pid);
+    return p ? `<span class="drill-pattern-pill">${p.name}</span>` : '';
+  }).join('');
+
+  let html = `
+    <div class="drill-wallet-stats">
+      <div class="drill-stat-card">
+        <div class="drill-stat-label">Total Flags</div>
+        <div class="drill-stat-val">${flags.length}</div>
+      </div>
+      <div class="drill-stat-card">
+        <div class="drill-stat-label">Score Range</div>
+        <div class="drill-stat-val">${minScore}&ndash;${maxScore}</div>
+      </div>
+      <div class="drill-stat-card">
+        <div class="drill-stat-label">First Seen</div>
+        <div class="drill-stat-val" style="font-size:13px">${firstSeen}</div>
+      </div>
+      <div class="drill-stat-card">
+        <div class="drill-stat-label">Last Active</div>
+        <div class="drill-stat-val" style="font-size:13px">${lastSeen}</div>
+      </div>
+    </div>
+    <div class="drill-section-label">Patterns Detected</div>
+    <div class="drill-pattern-pills">${patternsHtml || '<span style="color:rgba(245,240,235,0.4);font-size:12px">None</span>'}</div>
+    <div class="drill-wallet-info" style="margin-bottom:16px">
+      <div class="drill-wallet-row">
+        <span class="drill-wallet-key">Wallet Address</span>
+        <span class="drill-wallet-val" onclick="copyToClipboard('${wallet.address}')">${truncateWallet(wallet.address)}</span>
+      </div>
+      <div class="drill-copy-hint">Click to copy full address</div>
+      <div class="drill-wallet-row" style="margin-top:6px">
+        <a href="https://polymarket.com/profile/${wallet.address}" target="_blank" rel="noreferrer noopener"
+           style="font-size:11px;color:rgba(245,240,235,0.5);text-decoration:none" onmouseover="this.style.color='#7a9e7e'" onmouseout="this.style.color='rgba(245,240,235,0.5)'">
+          &#x2197; Full trading history on Polymarket &rarr;
+        </a>
+      </div>
+      <div class="drill-wallet-row" style="margin-top:8px">
+        <span class="drill-wallet-key">Total Notional</span>
+        <span class="drill-wallet-val" style="cursor:default">$${Math.round(totalNotional).toLocaleString()} USDC</span>
+      </div>
+      <div class="drill-wallet-row">
+        <span class="drill-wallet-key">Win Rate</span>
+        <span class="drill-wallet-val" style="cursor:default">${Math.round(wallet.winRate*100)}%</span>
+      </div>
+      <div class="drill-wallet-row">
+        <span class="drill-wallet-key">Wallet Age</span>
+        <span class="drill-wallet-val" style="cursor:default">${wallet.walletAge} days</span>
+      </div>
+    </div>
+    <hr class="panel-divider">
+    <div class="drill-section-label">Bets by Market</div>
+  `;
+
+  marketList.forEach((market, mi) => {
+    const mTotal = market.alerts.reduce((s,a)=>s+a.netValue,0);
+    const closesIn = market.endDate ? Math.round((new Date(market.endDate)-Date.now())/86400000) : '?';
+    const groupId = 'mg-' + mi;
+    // Use real trades if fetched, else show empty state
+    const realTrades = market.tradesById;
+    const sourceLabel = realTrades ? '&#x1F7E2; Live' : '&#x26AA; No data';
+    const tradeRows = realTrades
+      ? realTrades.map(t => renderBetRow(t, market.alerts[0])).join('')
+      : '<div style="color:rgba(245,240,235,0.35);font-size:12px;padding:10px 0">No trade data available — market has no conditionId</div>';
+
+    // Emulate: use first real trade's direction/price if available
+    const firstReal = realTrades && realTrades[0];
+    const emulateOutcome = firstReal ? (firstReal.outcome || 'Yes') : (market.alerts[0].side || 'YES');
+    const emulatePrice = firstReal ? Math.round((firstReal.price||0.5)*100) : Math.round((market.alerts[0].price||0.5)*100);
+
+    html += `
+      <div class="drill-market-group">
+        <div class="drill-market-group-header" onclick="toggleMarketGroup('${groupId}')">
+          <div style="flex:1;min-width:0">
+            <div class="drill-market-group-title">${escHtml(market.question)}</div>
+            <div class="drill-market-summary">
+              ${market.alerts.length} flag(s) &middot; $${Math.round(mTotal).toLocaleString()} USDC &middot; closes in ${closesIn}d
+              &middot; <span style="color:rgba(245,240,235,0.35)">${sourceLabel}</span>
+            </div>
+          </div>
+          <span class="drill-market-toggle" id="${groupId}-chev">&#9662;</span>
+        </div>
+        <div class="collapsible-content" id="${groupId}">
+          ${tradeRows}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
+            <a href="https://polymarket.com/event/${escHtml(market.slug || '')}" target="_blank" rel="noreferrer noopener"
+               class="btn btn-primary btn-xs" style="justify-content:center;text-decoration:none;display:flex">
+              &#x2197; Emulate: ${escHtml(emulateOutcome.toUpperCase())} @ ${emulatePrice}&cent;
+            </a>
+            <a href="https://polymarket.com/event/${escHtml(market.slug || '')}" target="_blank" rel="noreferrer noopener"
+               class="btn btn-ghost btn-xs" style="justify-content:center;text-decoration:none;display:flex">
+              View Market
+            </a>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  bodyEl.innerHTML = html;
+}
+
+function toggleMarketGroup(groupId) {
+  const el = document.getElementById(groupId);
+  const chev = document.getElementById(groupId + '-chev');
+  if (el) el.classList.toggle('open');
+  if (chev) chev.classList.toggle('open');
+}
+
+// ===== HELPERS =====
+function truncateWallet(addr) {
+  if (!addr || addr.length < 14) return addr;
+  return addr.slice(0, 8) + '…' + addr.slice(-6);
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('Copied: ' + truncateWallet(text)));
+}
+
+function formatTimeAgo(ts) {
+  const diffMs = Date.now() - ts;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffSec < 60) return diffSec + 's ago';
+  if (diffMin < 60) return diffMin + 'm ago';
+  if (diffHr < 24) return diffHr + 'h ' + (diffMin%60) + 'm ago';
+  return Math.floor(diffHr/24) + 'd ago';
+}
+
+function formatDateHuman(d) {
+  if (!(d instanceof Date) || isNaN(d)) return 'Unknown';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ===== KEYBOARD =====
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDrillPanel();
+});
+</script>
+</body>
+</html>
