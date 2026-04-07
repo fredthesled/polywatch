@@ -1577,12 +1577,14 @@ hr.panel-divider { border: none; border-top: 1px solid var(--border); margin: 14
         <span class="filter-row-label">Cat</span>
         <div class="pills" id="p-cat-pills">
           <div class="pill active" data-cat="all" onclick="P_setCat('all')">All</div>
-          <div class="pill" data-cat="politics" onclick="P_setCat('politics')">Politics</div>
-          <div class="pill" data-cat="crypto" onclick="P_setCat('crypto')">Crypto</div>
-          <div class="pill" data-cat="sports" onclick="P_setCat('sports')">Sports</div>
-          <div class="pill" data-cat="economy" onclick="P_setCat('economy')">Economy</div>
-          <div class="pill" data-cat="entertainment" onclick="P_setCat('entertainment')">Entertainment</div>
-          <div class="pill" data-cat="other" onclick="P_setCat('other')">Other</div>
+          <div class="pill" data-cat="Politics" onclick="P_setCat('Politics')">Politics</div>
+          <div class="pill" data-cat="Geopolitics" onclick="P_setCat('Geopolitics')">Geopolitics</div>
+          <div class="pill" data-cat="Crypto" onclick="P_setCat('Crypto')">Crypto</div>
+          <div class="pill" data-cat="Economy" onclick="P_setCat('Economy')">Economy</div>
+          <div class="pill" data-cat="Sports" onclick="P_setCat('Sports')">Sports</div>
+          <div class="pill" data-cat="Tech" onclick="P_setCat('Tech')">Tech</div>
+          <div class="pill" data-cat="Entertainment" onclick="P_setCat('Entertainment')">Entertainment</div>
+          <div class="pill" data-cat="Other" onclick="P_setCat('Other')">Other</div>
         </div>
         <div class="filter-row-actions">
           <button class="btn btn-sm" onclick="openMethodologyModal()" title="Pattern methodology">? Patterns</button>
@@ -1601,6 +1603,7 @@ hr.panel-divider { border: none; border-top: 1px solid var(--border); margin: 14
           <button class="pat-pill jit" data-pat="jit" onclick="P_setPat('jit')">Just-in-Time <span class="pat-pill-count" id="p-pc-jit">0</span></button>
         </div>
         <div class="filter-row-actions">
+          <button class="btn btn-sm" id="p-sort-btn" onclick="P_toggleSort()">&#x21C5; Newest</button>
           <button class="btn btn-sm" id="p-pause-btn" onclick="P_togglePause()">&#9646;&#9646; Pause</button>
           <button class="btn btn-accent btn-sm" onclick="P_manualRefresh()">&#8635; Refresh</button>
           <span class="slider-val" id="p-countdown">30s</span>
@@ -1774,6 +1777,7 @@ hr.panel-divider { border: none; border-top: 1px solid var(--border); margin: 14
             <input type="range" id="k-scoreSlider" min="60" max="99" value="60" oninput="K_onSliderChange()">
             <span class="slider-val" id="k-scoreSliderVal">60</span>
           </div>
+          <button class="btn btn-sm" id="k-sort-btn" onclick="K_toggleSort()">&#x21C5; Newest</button>
           <button class="btn btn-sm" id="k-pauseBtn" onclick="K_togglePause()">&#9646;&#9646; Pause</button>
           <button class="btn btn-accent btn-sm" id="k-refreshBtn" onclick="K_manualRefresh()">&#8635; Refresh</button>
           <span class="slider-val" id="k-countdown">30s</span>
@@ -2302,6 +2306,7 @@ let P_sessionAlerts = [];
 let P_flaggedWallets = {};
 let P_activeFilter = 'all'; // pattern filter
 let P_catFilter    = 'all'; // category filter
+let P_sortOrder    = 'newest'; // 'newest' | 'score'
 let P_scanPaused = false;
 let P_countdownSecs = 30;
 let P_countdownTimer = null;
@@ -2484,7 +2489,7 @@ function P_scoreTradeGroup(market, trades) {
   return {
     id: 'palert_' + market.id + '_' + (trades[0].proxyWallet||'u') + '_' + Date.now(),
     question: market.question || trades[0].title || 'Unknown market',
-    category: market.category || 'Unknown',
+    category: P_normalizeCategory(market.category || P_detectCategory(market.question || '')),
     wallet: trades[0].proxyWallet,
     side: (trades[0].outcome || 'YES').toUpperCase(),
     price: avgPrice,
@@ -2541,7 +2546,7 @@ function P_processTradeBatch(trades) {
       id: g.conditionId || g.sample.conditionId,
       conditionId: g.conditionId,
       question: g.sample.title || 'Unknown',
-      category: P_detectCategory(g.sample.title || ''),
+      category: P_normalizeCategory(P_detectCategory(g.sample.title || '')),
       endDate: null,
       outcomePrices: null,
       volume: 0,
@@ -2568,14 +2573,36 @@ function P_processTradeBatch(trades) {
   }
 }
 
+// Canonical Polymarket categories (must match pill data-cat values exactly, case-insensitive)
+const P_CATEGORIES = ['Politics','Geopolitics','Crypto','Economy','Sports','Tech','Entertainment','Other'];
+
 function P_detectCategory(title) {
   const t = (title || '').toLowerCase();
-  if (/bitcoin|btc|eth|crypto|coin/.test(t)) return 'Crypto';
-  if (/trump|biden|election|senate|congress|president|vote/.test(t)) return 'Politics';
-  if (/russia|ukraine|iran|war|military|ceasefire|nato/.test(t)) return 'Geopolitics';
-  if (/fed|rate|inflation|gdp|economy|tariff/.test(t)) return 'Economy';
-  if (/nba|nfl|soccer|sports|game|championship/.test(t)) return 'Sports';
-  if (/ai|spacex|nasa|science|tech/.test(t)) return 'Science';
+  if (/bitcoin|btc|ethereum|eth|solana|sol|crypto|token|coin|doge/.test(t)) return 'Crypto';
+  if (/russia|ukraine|iran|war|military|ceasefire|nato|china|israel|hamas|conflict|nuclear/.test(t)) return 'Geopolitics';
+  if (/trump|biden|harris|election|senate|congress|president|vote|poll|republican|democrat|primary/.test(t)) return 'Politics';
+  if (/fed|rate|inflation|gdp|economy|tariff|recession|jobs|cpi|unemployment/.test(t)) return 'Economy';
+  if (/nba|nfl|nhl|mlb|soccer|mls|wta|atp|sports|game|championship|playoff|score|runs|goal/.test(t)) return 'Sports';
+  if (/ai|spacex|nasa|tech|ipo|merger|openai|apple|google|microsoft|startup/.test(t)) return 'Tech';
+  if (/movie|oscar|grammy|celebrity|tv|show|award|music|entertainment|box office/.test(t)) return 'Entertainment';
+  return 'Other';
+}
+
+function P_normalizeCategory(raw) {
+  if (!raw) return 'Other';
+  const r = raw.trim();
+  // Direct match (case-insensitive)
+  const found = P_CATEGORIES.find(c => c.toLowerCase() === r.toLowerCase());
+  if (found) return found;
+  // Fuzzy map for API-returned values
+  const t = r.toLowerCase();
+  if (/crypto|bitcoin|financial|finance/.test(t)) return 'Crypto';
+  if (/politic|election|government|congress/.test(t)) return 'Politics';
+  if (/geopolit|war|military|conflict/.test(t)) return 'Geopolitics';
+  if (/sport|game|nba|nfl|soccer/.test(t)) return 'Sports';
+  if (/econ|market|trade|inflation|gdp/.test(t)) return 'Economy';
+  if (/tech|ai|science|space/.test(t)) return 'Tech';
+  if (/entertainment|celebrity|movie|tv/.test(t)) return 'Entertainment';
   return 'Other';
 }
 
@@ -2605,7 +2632,12 @@ function P_renderAlerts() {
     visible = visible.filter(a => a.patternIds.includes(P_activeFilter));
   }
   if (P_catFilter !== 'all') {
-    visible = visible.filter(a => (a.category || '').toLowerCase() === P_catFilter);
+    visible = visible.filter(a => a.category === P_catFilter);
+  }
+  if (P_sortOrder === 'score') {
+    visible.sort((a, b) => b.score - a.score);
+  } else {
+    visible.sort((a, b) => b.timestamp - a.timestamp); // newest first
   }
   if (visible.length === 0) {
     empty.style.display = 'flex';
@@ -2641,6 +2673,10 @@ function P_buildAlertCard(alert) {
   const timeAgo = P_formatTimeAgo(alert.timestamp);
   const notional = '$' + Math.round(alert.netValue || 0).toLocaleString() + ' USDC';
   const searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent((alert.question || '') + ' polymarket');
+  const endDateStr = alert.endDate || '';
+  const closeMsP = endDateStr ? new Date(endDateStr).getTime() - Date.now() : null;
+  const closeColorP = closeMsP !== null ? (closeMsP < 3600000 ? 'color:var(--accent-red)' : closeMsP < 21600000 ? 'color:var(--accent-amber)' : '') : '';
+  const closeTextP = P_liveClose(endDateStr);
 
   el.innerHTML = `
     <div class="alert-header" onclick="P_toggleAlertCard('${alert.id}')">
@@ -2651,6 +2687,7 @@ function P_buildAlertCard(alert) {
           <span class="tag tag-cat">${escHtml(alert.category)}</span>
           <span class="tag ${alert.side === 'YES' ? 'tag-yes' : 'tag-no'}">${alert.side}</span>
           ${patternsHTML}
+          <span class="tag" style="font-family:var(--font-mono);font-size:0.62rem;${closeColorP}">closes <span class="live-close-p" data-ed="${escHtml(endDateStr)}" style="${closeColorP}">${closeTextP}</span></span>
         </div>
       </div>
       <div class="alert-right">
@@ -2696,6 +2733,14 @@ function P_toggleAlertCard(id) {
   if (chev) chev.classList.toggle('open');
 }
 
+// Sort toggle
+function P_toggleSort() {
+  P_sortOrder = P_sortOrder === 'newest' ? 'score' : 'newest';
+  const btn = document.getElementById('p-sort-btn');
+  if (btn) btn.textContent = P_sortOrder === 'newest' ? '&#x21C5; Newest' : '&#9650; Score';
+  P_renderAlerts();
+}
+
 // Pattern filter
 function P_setPat(pat) {
   P_activeFilter = pat;
@@ -2707,7 +2752,7 @@ function P_setPat(pat) {
 
 // Category filter
 function P_setCat(cat) {
-  P_catFilter = cat;
+  P_catFilter = cat; // 'all' or exact canonical value e.g. 'Crypto'
   document.querySelectorAll('#p-cat-pills .pill').forEach(p => {
     p.classList.toggle('active', p.dataset.cat === cat);
   });
@@ -2887,7 +2932,7 @@ async function P_runRealBackscrape(depth, minScore, category, appendLog) {
       const market = {
         id: m.id || conditionId, conditionId,
         question: m.question || m.title || 'Unknown',
-        category: P_detectCategory(m.question || ''),
+        category: P_normalizeCategory(P_detectCategory(m.question || '')),
         endDate: m.endDate || m.endDateIso || null,
         outcomePrices: m.outcomePrices || null,
         volume: m.volume || 0,
@@ -3323,8 +3368,9 @@ const K_SERIES_LABELS = {
 // State
 let K_sessionFlags = [];
 let K_marketsScanned = 0;
-let K_activeFilter = 'ALL';
+let K_activeFilter  = 'ALL';
 let K_patternFilter = 'ALL';
+let K_sortOrder     = 'newest'; // 'newest' | 'score'
 let K_scoreThreshold = 60;
 let K_contractsThreshold = 1;
 let K_scanPaused = false;
@@ -3382,15 +3428,34 @@ function K_decodeTicker(ticker) {
   return series + ': ' + suffix;
 }
 
+// Canonical Kalshi categories (must match pill data-cat values exactly)
+const K_CATEGORIES = ['Politics','Geopolitics','Crypto','Economy','Sports','Tech','Climate','Other'];
+
 function K_detectCategory(title) {
   const t = (title || '').toLowerCase();
-  if (/bitcoin|btc|eth|crypto|coin|sol|doge/.test(t)) return 'Crypto';
-  if (/trump|biden|election|senate|congress|president|vote|poll/.test(t)) return 'Politics';
-  if (/russia|ukraine|iran|war|military|ceasefire|nato|china/.test(t)) return 'Geopolitics';
-  if (/fed|rate|inflation|gdp|economy|tariff|recession|jobs/.test(t)) return 'Economy';
-  if (/nba|nfl|nhl|mlb|soccer|sports|game|championship|score|runs/.test(t)) return 'Sports';
-  if (/temperature|hurricane|tornado|earthquake|storm/.test(t)) return 'Climate';
-  if (/ai|spacex|nasa|tech|ipo|merger/.test(t)) return 'Tech';
+  if (/bitcoin|btc|ethereum|eth|solana|sol|crypto|token|coin|doge/.test(t)) return 'Crypto';
+  if (/russia|ukraine|iran|war|military|ceasefire|nato|china|israel|hamas|conflict|nuclear/.test(t)) return 'Geopolitics';
+  if (/trump|biden|harris|election|senate|congress|president|vote|poll|republican|democrat|primary/.test(t)) return 'Politics';
+  if (/fed|rate|inflation|gdp|economy|tariff|recession|jobs|cpi|unemployment/.test(t)) return 'Economy';
+  if (/nba|nfl|nhl|mlb|soccer|mls|wta|atp|sports|game|championship|playoff|score|runs|goal/.test(t)) return 'Sports';
+  if (/temperature|hurricane|tornado|earthquake|storm|weather|climate|flood/.test(t)) return 'Climate';
+  if (/ai|spacex|nasa|tech|ipo|merger|openai|apple|google|microsoft|startup/.test(t)) return 'Tech';
+  return 'Other';
+}
+
+function K_normalizeCategory(raw) {
+  if (!raw) return 'Other';
+  const r = raw.trim();
+  const found = K_CATEGORIES.find(c => c.toLowerCase() === r.toLowerCase());
+  if (found) return found;
+  const t = r.toLowerCase();
+  if (/crypto|bitcoin|financial|finance/.test(t)) return 'Crypto';
+  if (/politic|election|government|congress/.test(t)) return 'Politics';
+  if (/geopolit|war|military|conflict|foreign/.test(t)) return 'Geopolitics';
+  if (/sport|game|nba|nfl|soccer|baseball|hockey/.test(t)) return 'Sports';
+  if (/econ|market|trade|inflation|gdp|fiscal/.test(t)) return 'Economy';
+  if (/tech|ai|science|space|software/.test(t)) return 'Tech';
+  if (/climate|weather|environment|storm/.test(t)) return 'Climate';
   return 'Other';
 }
 
@@ -3525,7 +3590,7 @@ async function K_scoreMarketTrades(market, trades) {
     ticker: market.ticker,
     eventTicker: market.event_ticker || '',
     title: market.title || K_decodeTicker(market.ticker),
-    category: market.category || K_detectCategory(market.title || market.ticker || ''),
+    category: K_normalizeCategory(market.category || K_detectCategory(market.title || market.ticker || '')),
     side: dominantSide,
     sidePrice,
     avgYesPrice,
@@ -3699,6 +3764,13 @@ function K_updatePatternCounters() {
   });
 }
 
+function K_toggleSort() {
+  K_sortOrder = K_sortOrder === 'newest' ? 'score' : 'newest';
+  const btn = document.getElementById('k-sort-btn');
+  if (btn) btn.textContent = K_sortOrder === 'newest' ? '&#x21C5; Newest' : '&#9650; Score';
+  K_renderFlags();
+}
+
 function K_setPat(pat) {
   K_patternFilter = pat;
   document.querySelectorAll('#k-patternPills .pat-pill').forEach(btn => {
@@ -3726,13 +3798,19 @@ function K_onSliderChange() {
 }
 
 function K_getFilteredFlags() {
-  return K_sessionFlags.filter(f => {
+  const flags = K_sessionFlags.filter(f => {
     if (K_activeFilter !== 'ALL' && f.category !== K_activeFilter) return false;
     if (K_patternFilter !== 'ALL' && !(f.patternIds || []).includes(K_patternFilter)) return false;
     if (f.score < K_scoreThreshold) return false;
     if (f.totalContracts < K_contractsThreshold) return false;
     return true;
   });
+  if (K_sortOrder === 'score') {
+    flags.sort((a, b) => b.score - a.score);
+  } else {
+    flags.sort((a, b) => b.timestamp - a.timestamp); // newest first
+  }
+  return flags;
 }
 
 function K_getScoreClass(score) {
@@ -3788,6 +3866,43 @@ function K_formatHoursToClose(h) {
   return Math.floor(h / 24) + 'd';
 }
 
+// Compute live time-to-close from stored ISO close time
+function K_liveClose(closeTimeStr) {
+  if (!closeTimeStr) return '?';
+  const ms = new Date(closeTimeStr).getTime() - Date.now();
+  if (ms <= 0) return 'Closed';
+  const totalMin = Math.floor(ms / 60000);
+  if (totalMin < 60) return totalMin + 'm';
+  const h = ms / 3600000;
+  if (h < 48) return h.toFixed(1) + 'h';
+  return Math.floor(h / 24) + 'd';
+}
+
+function P_liveClose(endDateStr) {
+  if (!endDateStr) return '?';
+  const ms = new Date(endDateStr).getTime() - Date.now();
+  if (ms <= 0) return 'Closed';
+  const totalMin = Math.floor(ms / 60000);
+  if (totalMin < 60) return totalMin + 'm';
+  const h = ms / 3600000;
+  if (h < 48) return h.toFixed(1) + 'h';
+  return Math.floor(h / 24) + 'd';
+}
+
+// Live close-time ticker: updates all visible close time spans every 60s
+setInterval(() => {
+  document.querySelectorAll('.live-close-k[data-ct]').forEach(el => {
+    el.textContent = K_liveClose(el.dataset.ct);
+    const ms = new Date(el.dataset.ct).getTime() - Date.now();
+    el.style.color = ms < 3600000 ? 'var(--accent-red)' : ms < 21600000 ? 'var(--accent-amber)' : '';
+  });
+  document.querySelectorAll('.live-close-p[data-ed]').forEach(el => {
+    el.textContent = P_liveClose(el.dataset.ed);
+    const ms = new Date(el.dataset.ed).getTime() - Date.now();
+    el.style.color = ms < 3600000 ? 'var(--accent-red)' : ms < 21600000 ? 'var(--accent-amber)' : '';
+  });
+}, 60000);
+
 function K_renderFlagCard(flag) {
   const tierClass = K_getTierClass(flag.score);
   const scoreClass = K_getScoreClass(flag.score);
@@ -3822,7 +3937,7 @@ function K_renderFlagCard(flag) {
         </div>
       </div>
       <div class="card-footer">
-        <span class="card-time">${K_formatTimeAgo(flag.timestamp)} &middot; closes ${K_formatHoursToClose(flag.hoursToClose)}</span>
+        <span class="card-time">${K_formatTimeAgo(flag.timestamp)} &middot; closes <span class="live-close-k" data-ct="${flag.closeTime || ''}" style="${flag.closeTime && (new Date(flag.closeTime).getTime()-Date.now())<3600000 ? 'color:var(--accent-red)' : flag.closeTime && (new Date(flag.closeTime).getTime()-Date.now())<21600000 ? 'color:var(--accent-amber)' : ''}">${K_liveClose(flag.closeTime)}</span></span>
         <a class="search-btn" href="${searchUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">&#128269; Search on Kalshi</a>
       </div>
     </div>`;
