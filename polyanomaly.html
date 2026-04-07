@@ -1394,6 +1394,105 @@ hr.panel-divider { border: none; border-top: 1px solid var(--border); margin: 14
 .method-pattern-name { font-weight: 600; margin-bottom: 3px; font-size: 0.82rem; color: var(--text-primary); }
 .method-pattern-threshold { font-family: var(--font-mono); font-size: 0.63rem; color: var(--text-secondary); }
 
+/* ---- Unified filter bar ---- */
+.filter-bar { display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
+.filter-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.filter-row-label { font-size: 0.62rem; font-family: var(--font-mono); text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--text-secondary); white-space: nowrap; padding-right: 2px; }
+.filter-row-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+
+/* Pattern pills with embedded count badge */
+.pat-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px 3px 9px; border-radius: 99px;
+  font-size: 0.72rem; font-weight: 500; cursor: pointer;
+  border: 1px solid var(--border); color: var(--text-secondary);
+  background: transparent; transition: all 0.15s; white-space: nowrap;
+  user-select: none;
+}
+.pat-pill:hover { border-color: var(--accent); color: var(--text-primary); }
+.pat-pill.active { background: rgba(79,142,247,0.12); border-color: var(--accent); color: var(--text-primary); }
+.pat-pill .pat-pill-count {
+  font-family: var(--font-mono); font-size: 0.63rem;
+  background: var(--bg-elevated); border-radius: 99px;
+  padding: 0px 5px; color: var(--text-secondary); min-width: 16px; text-align: center;
+}
+.pat-pill.active .pat-pill-count { background: rgba(79,142,247,0.2); color: var(--accent); }
+
+/* Per-pattern color overrides on active state */
+.pat-pill.jit.active  { background: rgba(239,68,68,0.10); border-color: rgba(239,68,68,0.55); color: var(--accent-red); }
+.pat-pill.jit.active .pat-pill-count { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+.pat-pill.whale.active { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.55); color: var(--accent-amber); }
+.pat-pill.whale.active .pat-pill-count { background: rgba(245,158,11,0.15); color: var(--accent-amber); }
+.pat-pill.pi.active { background: rgba(34,197,94,0.10); border-color: rgba(34,197,94,0.55); color: var(--accent-green); }
+.pat-pill.pi.active .pat-pill-count { background: rgba(34,197,94,0.15); color: var(--accent-green); }
+.pat-pill.obi.active { background: rgba(79,142,247,0.12); border-color: rgba(79,142,247,0.55); color: var(--accent); }
+.pat-pill.sweep.active { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.55); color: var(--accent-amber); }
+.pat-pill.sweep.active .pat-pill-count { background: rgba(245,158,11,0.15); color: var(--accent-amber); }
+.pat-pill.cal.active  { background: rgba(124,92,191,0.12); border-color: rgba(124,92,191,0.55); color: #a78bfa; }
+.pat-pill.cal.active .pat-pill-count { background: rgba(124,92,191,0.15); color: #a78bfa; }
+.pat-pill.sybil.active { background: rgba(42,157,143,0.12); border-color: rgba(42,157,143,0.55); color: #2dd4bf; }
+.pat-pill.sybil.active .pat-pill-count { background: rgba(42,157,143,0.15); color: #2dd4bf; }
+.pat-pill.dorm.active { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.55); color: var(--accent-amber); }
+.pat-pill.cat.active  { background: rgba(34,197,94,0.10); border-color: rgba(34,197,94,0.55); color: var(--accent-green); }
+.pat-pill.cat.active .pat-pill-count { background: rgba(34,197,94,0.15); color: var(--accent-green); }
+.pat-pill.user.active { background: rgba(239,68,68,0.10); border-color: rgba(239,68,68,0.55); color: var(--accent-red); }
+.pat-pill.user.active .pat-pill-count { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+
+/* Methodology modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(14,17,23,0.82); z-index: 600;
+  align-items: flex-start; justify-content: center;
+  overflow-y: auto; padding: 24px 12px;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); width: 100%; max-width: 780px;
+  padding: 22px 22px 28px;
+  margin: auto;
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px;
+}
+.modal-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); }
+.modal-close {
+  background: none; border: none; color: var(--text-secondary); cursor: pointer;
+  font-size: 1.3rem; line-height: 1; padding: 2px 6px; border-radius: 4px;
+}
+.modal-close:hover { color: var(--text-primary); background: var(--bg-elevated); }
+.modal-section-label {
+  font-size: 0.65rem; font-family: var(--font-mono); text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-secondary); margin: 16px 0 8px;
+  display: flex; align-items: center; gap: 7px;
+}
+.modal-section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.modal-pattern-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+@media (max-width: 480px) { .modal-pattern-grid { grid-template-columns: 1fr; } }
+.modal-pattern-card {
+  background: var(--bg-elevated); border-radius: var(--radius);
+  border-left: 3px solid var(--border); padding: 12px 13px;
+}
+.mpcard-head { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
+.mpcard-badge {
+  font-size: 0.62rem; font-family: var(--font-mono); font-weight: 700;
+  padding: 1px 6px; border-radius: 4px; flex-shrink: 0;
+}
+.mpcard-name { font-size: 0.84rem; font-weight: 600; color: var(--text-primary); }
+.mpcard-platform {
+  font-size: 0.6rem; font-family: var(--font-mono); padding: 1px 5px;
+  border-radius: 3px; background: var(--bg-surface); color: var(--text-secondary);
+  border: 1px solid var(--border); margin-left: auto; flex-shrink: 0;
+}
+.mpcard-desc { font-size: 0.74rem; color: var(--text-secondary); line-height: 1.55; margin-bottom: 7px; }
+.mpcard-threshold {
+  font-size: 0.63rem; font-family: var(--font-mono); color: var(--text-secondary);
+  background: var(--bg-surface); border-radius: 4px; padding: 4px 7px;
+  border: 1px solid var(--border);
+}
+
 .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 600px) { .settings-grid { grid-template-columns: 1fr; } }
 .settings-group { display: flex; flex-direction: column; gap: 4px; }
@@ -1471,22 +1570,41 @@ hr.panel-divider { border: none; border-top: 1px solid var(--border); margin: 14
        ============================================================ -->
   <div id="tab-polymarket" class="tab-panel active">
 
-    <!-- Filter pills -->
-    <div class="controls-bar">
-      <div class="pills" id="p-filter-pills">
-        <div class="pill active" data-filter="all">All</div>
-        <div class="pill p-cal" data-filter="cal">Calendar Spread</div>
-        <div class="pill p-sybil" data-filter="sybil">Sybil Splitting</div>
-        <div class="pill p-dorm" data-filter="dorm">Dormancy</div>
-        <div class="pill p-cat" data-filter="cat">Cat. Concentration</div>
-        <div class="pill p-user" data-filter="user">Username Rotation</div>
-        <div class="pill p-jit" data-filter="jit">Just-in-Time</div>
+    <!-- Unified filter bar -->
+    <div class="filter-bar">
+      <!-- Row 1: Category -->
+      <div class="filter-row">
+        <span class="filter-row-label">Cat</span>
+        <div class="pills" id="p-cat-pills">
+          <div class="pill active" data-cat="all" onclick="P_setCat('all')">All</div>
+          <div class="pill" data-cat="politics" onclick="P_setCat('politics')">Politics</div>
+          <div class="pill" data-cat="crypto" onclick="P_setCat('crypto')">Crypto</div>
+          <div class="pill" data-cat="sports" onclick="P_setCat('sports')">Sports</div>
+          <div class="pill" data-cat="economy" onclick="P_setCat('economy')">Economy</div>
+          <div class="pill" data-cat="entertainment" onclick="P_setCat('entertainment')">Entertainment</div>
+          <div class="pill" data-cat="other" onclick="P_setCat('other')">Other</div>
+        </div>
+        <div class="filter-row-actions">
+          <button class="btn btn-sm" onclick="openMethodologyModal()" title="Pattern methodology">? Patterns</button>
+        </div>
       </div>
-      <div class="sliders">
-        <span class="slider-label">Pause</span>
-        <button class="btn btn-sm" id="p-pause-btn" onclick="P_togglePause()">&#9646;&#9646; Pause</button>
-        <button class="btn btn-accent btn-sm" onclick="P_manualRefresh()">&#8635; Refresh</button>
-        <span class="slider-val" id="p-countdown">30s</span>
+      <!-- Row 2: Pattern -->
+      <div class="filter-row">
+        <span class="filter-row-label">Pat</span>
+        <div id="p-pattern-pills" style="display:flex;gap:5px;flex-wrap:wrap;">
+          <button class="pat-pill active" data-pat="all" onclick="P_setPat('all')">All</button>
+          <button class="pat-pill cal" data-pat="cal" onclick="P_setPat('cal')">Cal. Spread <span class="pat-pill-count" id="p-pc-cal">0</span></button>
+          <button class="pat-pill sybil" data-pat="sybil" onclick="P_setPat('sybil')">Sybil <span class="pat-pill-count" id="p-pc-sybil">0</span></button>
+          <button class="pat-pill dorm" data-pat="dorm" onclick="P_setPat('dorm')">Dormancy <span class="pat-pill-count" id="p-pc-dorm">0</span></button>
+          <button class="pat-pill cat" data-pat="cat" onclick="P_setPat('cat')">Vol. Conc. <span class="pat-pill-count" id="p-pc-cat">0</span></button>
+          <button class="pat-pill user" data-pat="user" onclick="P_setPat('user')">Addr. Rotation <span class="pat-pill-count" id="p-pc-user">0</span></button>
+          <button class="pat-pill jit" data-pat="jit" onclick="P_setPat('jit')">Just-in-Time <span class="pat-pill-count" id="p-pc-jit">0</span></button>
+        </div>
+        <div class="filter-row-actions">
+          <button class="btn btn-sm" id="p-pause-btn" onclick="P_togglePause()">&#9646;&#9646; Pause</button>
+          <button class="btn btn-accent btn-sm" onclick="P_manualRefresh()">&#8635; Refresh</button>
+          <span class="slider-val" id="p-countdown">30s</span>
+        </div>
       </div>
     </div>
 
@@ -1619,44 +1737,49 @@ hr.panel-divider { border: none; border-top: 1px solid var(--border); margin: 14
        ============================================================ -->
   <div id="tab-kalshi" class="tab-panel">
 
-    <!-- DB status + controls -->
-    <div class="k-filter-bar">
-      <div class="pills" id="k-catPills">
-        <button class="pill active" data-cat="ALL" onclick="K_setCat('ALL')">ALL</button>
-        <button class="pill" data-cat="Politics" onclick="K_setCat('Politics')">Politics</button>
-        <button class="pill" data-cat="Crypto" onclick="K_setCat('Crypto')">Crypto</button>
-        <button class="pill" data-cat="Sports" onclick="K_setCat('Sports')">Sports</button>
-        <button class="pill" data-cat="Economy" onclick="K_setCat('Economy')">Economy</button>
-        <button class="pill" data-cat="Tech" onclick="K_setCat('Tech')">Tech</button>
-        <button class="pill" data-cat="Climate" onclick="K_setCat('Climate')">Climate</button>
-        <button class="pill" data-cat="Geopolitics" onclick="K_setCat('Geopolitics')">Geopolitics</button>
-        <button class="pill" data-cat="Other" onclick="K_setCat('Other')">Other</button>
-      </div>
-      <div class="sliders">
-        <div class="slider-group">
-          <span class="slider-label">Min Score</span>
-          <input type="range" id="k-scoreSlider" min="60" max="99" value="60" oninput="K_onSliderChange()">
-          <span class="slider-val" id="k-scoreSliderVal">60</span>
+    <!-- Unified filter bar -->
+    <div class="filter-bar">
+      <!-- Row 1: Category -->
+      <div class="filter-row">
+        <span class="filter-row-label">Cat</span>
+        <div class="pills" id="k-catPills">
+          <button class="pill active" data-cat="ALL" onclick="K_setCat('ALL')">All</button>
+          <button class="pill" data-cat="Politics" onclick="K_setCat('Politics')">Politics</button>
+          <button class="pill" data-cat="Crypto" onclick="K_setCat('Crypto')">Crypto</button>
+          <button class="pill" data-cat="Sports" onclick="K_setCat('Sports')">Sports</button>
+          <button class="pill" data-cat="Economy" onclick="K_setCat('Economy')">Economy</button>
+          <button class="pill" data-cat="Tech" onclick="K_setCat('Tech')">Tech</button>
+          <button class="pill" data-cat="Climate" onclick="K_setCat('Climate')">Climate</button>
+          <button class="pill" data-cat="Geopolitics" onclick="K_setCat('Geopolitics')">Geopolitics</button>
+          <button class="pill" data-cat="Other" onclick="K_setCat('Other')">Other</button>
         </div>
-        <div class="slider-group">
-          <span class="slider-label">Min Contracts</span>
-          <input type="range" id="k-contractsSlider" min="1" max="500" value="1" oninput="K_onSliderChange()">
-          <span class="slider-val" id="k-contractsSliderVal">1</span>
+        <div class="filter-row-actions">
+          <button class="btn btn-sm" onclick="openMethodologyModal()" title="Pattern methodology">? Patterns</button>
         </div>
-        <button class="btn btn-sm" id="k-pauseBtn" onclick="K_togglePause()">&#9646;&#9646; Pause</button>
-        <button class="btn btn-accent btn-sm" id="k-refreshBtn" onclick="K_manualRefresh()">&#8635; Refresh</button>
-        <span class="slider-val" id="k-countdown">30s</span>
-        <div style="width:7px;height:7px;border-radius:50%;background:var(--text-secondary);flex-shrink:0;transition:background 0.3s;" id="k-dbDot" title="IndexedDB status"></div>
       </div>
-    </div>
-
-    <!-- Pattern counters -->
-    <div class="k-pattern-bar" id="k-patternBar">
-      <div class="pat-counter"><div class="pat-dot" style="background:#ef4444;"></div><span class="pat-name">Pre-Close Surge</span><span class="pat-num" id="k-pn-jit">0</span></div>
-      <div class="pat-counter"><div class="pat-dot" style="background:#f59e0b;"></div><span class="pat-name">Whale Block</span><span class="pat-num" id="k-pn-whale">0</span></div>
-      <div class="pat-counter"><div class="pat-dot" style="background:#22c55e;"></div><span class="pat-name">Price Dislocation</span><span class="pat-num" id="k-pn-pi">0</span></div>
-      <div class="pat-counter"><div class="pat-dot" style="background:#4f8ef7;"></div><span class="pat-name">Book Imbalance</span><span class="pat-num" id="k-pn-obi">0</span></div>
-      <div class="pat-counter"><div class="pat-dot" style="background:#f59e0b;"></div><span class="pat-name">Pre-Close Sweep</span><span class="pat-num" id="k-pn-sweep">0</span></div>
+      <!-- Row 2: Pattern -->
+      <div class="filter-row">
+        <span class="filter-row-label">Pat</span>
+        <div id="k-patternPills" style="display:flex;gap:5px;flex-wrap:wrap;">
+          <button class="pat-pill active" data-pat="ALL" onclick="K_setPat('ALL')">All</button>
+          <button class="pat-pill jit" data-pat="jit" onclick="K_setPat('jit')">Pre-Close Surge <span class="pat-pill-count" id="k-pc-jit">0</span></button>
+          <button class="pat-pill whale" data-pat="whale" onclick="K_setPat('whale')">Whale Block <span class="pat-pill-count" id="k-pc-whale">0</span></button>
+          <button class="pat-pill pi" data-pat="pi" onclick="K_setPat('pi')">Price Disloc. <span class="pat-pill-count" id="k-pc-pi">0</span></button>
+          <button class="pat-pill obi" data-pat="obi" onclick="K_setPat('obi')">Book Imbalance <span class="pat-pill-count" id="k-pc-obi">0</span></button>
+          <button class="pat-pill sweep" data-pat="sweep" onclick="K_setPat('sweep')">Pre-Close Sweep <span class="pat-pill-count" id="k-pc-sweep">0</span></button>
+        </div>
+        <div class="filter-row-actions">
+          <div class="slider-group">
+            <span class="slider-label">Score</span>
+            <input type="range" id="k-scoreSlider" min="60" max="99" value="60" oninput="K_onSliderChange()">
+            <span class="slider-val" id="k-scoreSliderVal">60</span>
+          </div>
+          <button class="btn btn-sm" id="k-pauseBtn" onclick="K_togglePause()">&#9646;&#9646; Pause</button>
+          <button class="btn btn-accent btn-sm" id="k-refreshBtn" onclick="K_manualRefresh()">&#8635; Refresh</button>
+          <span class="slider-val" id="k-countdown">30s</span>
+          <div style="width:7px;height:7px;border-radius:50%;background:var(--text-secondary);flex-shrink:0;" id="k-dbDot" title="IndexedDB"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Stats -->
@@ -1816,6 +1939,169 @@ hr.panel-divider { border: none; border-top: 1px solid var(--border); margin: 14
 
 </div><!-- /app-wrap -->
 
+<!-- ============================================================
+     METHODOLOGY MODAL
+     ============================================================ -->
+<div class="modal-overlay" id="methodologyModal" onclick="if(event.target===this)closeMethodologyModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Pattern Methodology</span>
+      <button class="modal-close" onclick="closeMethodologyModal()">&#215;</button>
+    </div>
+    <p style="font-size:0.75rem;color:var(--text-secondary);line-height:1.6;margin-bottom:4px;">
+      Each flag is scored across multiple layers. Patterns are bonus signals that indicate a specific
+      known behaviour associated with informed trading. A flag can carry multiple patterns simultaneously.
+      Scores are additive: each pattern adds up to 4 pts (Kalshi) or 3 pts (Polymarket), capped at the
+      pattern bonus ceiling.
+    </p>
+
+    <div class="modal-section-label">Kalshi patterns</div>
+    <div class="modal-pattern-grid">
+
+      <div class="modal-pattern-card" style="border-left-color:#ef4444;">
+        <div class="mpcard-head">
+          <span class="mpcard-badge" style="background:rgba(239,68,68,0.12);color:#ef4444;">jit</span>
+          <span class="mpcard-name">Pre-Close Surge</span>
+          <span class="mpcard-platform">Kalshi</span>
+        </div>
+        <p class="mpcard-desc">Concentrated, uniform buying in the final 6 hours before market close. Suggests coordinated last-minute positioning by participants with conviction about the outcome.</p>
+        <div class="mpcard-threshold">hoursToClose &lt; 6 &amp;&amp; uniformity &gt; 0.70</div>
+      </div>
+
+      <div class="modal-pattern-card" style="border-left-color:#f59e0b;">
+        <div class="mpcard-head">
+          <span class="mpcard-badge" style="background:rgba(245,158,11,0.12);color:#f59e0b;">whale</span>
+          <span class="mpcard-name">Whale Block</span>
+          <span class="mpcard-platform">Kalshi</span>
+        </div>
+        <p class="mpcard-desc">A single participant (or tight cluster) accounts for more than 50% of recent volume. High-conviction large position. Most informative in low-liquidity or niche markets.</p>
+        <div class="mpcard-threshold">dominance &gt; 0.50</div>
+      </div>
+
+      <div class="modal-pattern-card" style="border-left-color:#22c55e;">
+        <div class="mpcard-head">
+          <span class="mpcard-badge" style="background:rgba(34,197,94,0.12);color:#22c55e;">pi</span>
+          <span class="mpcard-name">Price Dislocation</span>
+          <span class="mpcard-platform">Kalshi</span>
+        </div>
+        <p class="mpcard-desc">Trades executing at more than 20% deviation from expected fair value with meaningful volume. May indicate private information or a mispriced market that a smart participant is exploiting.</p>
+        <div class="mpcard-threshold">priceDev &gt; 0.20 &amp;&amp; volumeRatio &gt; 0.05</div>
+      </div>
+
+      <div class="modal-pattern-card" style="border-left-color:#4f8ef7;">
+        <div class="mpcard-head">
+          <span class="mpcard-badge" style="background:rgba(79,142,247,0.12);color:#4f8ef7;">obi</span>
+          <span class="mpcard-name">Book Imbalance</span>
+          <span class="mpcard-platform">Kalshi</span>
+        </div>
+        <p class="mpcard-desc">Significant asymmetry in the live orderbook: one side carries substantially more resting liquidity, revealing a directional bias among market makers or large limit-order placers.</p>
+        <div class="mpcard-threshold">obImbalanceScore &gt; 60</div>
+      </div>
+
+      <div class="modal-pattern-card" style="border-left-color:#f59e0b;">
+        <div class="mpcard-head">
+          <span class="mpcard-badge" style="background:rgba(245,158,11,0.12);color:#f59e0b;">sweep</span>
+          <span class="mpcard-name">Pre-Close Sweep</span>
+          <span class="mpcard-platform">Kalshi</span>
+        </div>
+        <p class="mpcard-desc">Large, dominant trades in the final 60 minutes before resolution. More aggressive than a pre-close surge. Suggests someone is willing to pay a premium to accumulate position at the last moment.</p>
+        <div class="mpcard-threshold">hoursToClose &lt; 1 &amp;&amp; dominance &gt; 0.40</div>
+      </div>
+
+    </div><!-- /kalshi patterns -->
+
+    <div class="modal-section-label">Polymarket patterns</div>
+    <div class="modal-pattern-grid">
+
+      <div class="modal-pattern-card" style="border-left-color:#a78bfa;">
+        <div class="mpcard-head">
+          <span class="mpcard-badge" style="background:rgba(124,92,191,0.12);color:#a78bfa;">cal</span>
+          <span class="mpcard-name">Calendar Spread</span>
+          <span class="mpcard-platform">Polymarket</span>
+        </div>
+        <p class="mpcard-desc">Coordinated activity across related time-series markets (e.g. monthly price level ladders). Suggests a rolling or hedged position, or arbitrage between correlated contracts.</p>
+        <div class="mpcard-threshold">3+ correlated markets, same wallet cluster, &lt;2h window</div>
+      </div>
+
+      <div class="modal-pattern-card" style="border-left-color:#2dd4bf;">
+        <div class="mpcard-head">
+          <span class="mpcard-badge" style="background:rgba(42,157,143,0.12);color:#2dd4bf;">sybil</span>
+          <span class="mpcard-name">Sybil Splitting</span>
+          <span class="mpcard-platform">Polymarket</span>
+        </div>
+        <p class="mpcard-desc">Multiple wallets with correlated trade timing, size, and direction. Suggests one actor splitting a position across accounts, either to obscure true size or to circumvent per-wallet limits.</p>
+        <div class="mpcard-threshold">&ge;3 wallets, timing correlation &gt; 0.8, same direction</div>
+      </div>
+
+      <div class="modal-pattern-card" style="border-left-color:#f59e0b;">
+        <div class="mpcard-head">
+          <span class="mpcard-badge" style="background:rgba(245,158,11,0.12);color:#f59e0b;">dorm</span>
+          <span class="mpcard-name">Dormancy Break</span>
+          <span class="mpcard-platform">Polymarket</span>
+        </div>
+        <p class="mpcard-desc">A wallet inactive for 30+ days that suddenly places a significant bet. Dormant wallets tend to re-activate only for high-conviction opportunities, making their return statistically meaningful.</p>
+        <div class="mpcard-threshold">wallet inactive &ge;30 days, trade size &gt; $200</div>
+      </div>
+
+      <div class="modal-pattern-card" style="border-left-color:#22c55e;">
+        <div class="mpcard-head">
+          <span class="mpcard-badge" style="background:rgba(34,197,94,0.12);color:#22c55e;">cat</span>
+          <span class="mpcard-name">Volume Concentration</span>
+          <span class="mpcard-platform">Polymarket</span>
+        </div>
+        <p class="mpcard-desc">A single participant (or proxy cluster) responsible for more than 10% of recent market volume. Disproportionate size relative to market liquidity warrants closer scrutiny of the directional bet.</p>
+        <div class="mpcard-threshold">sizePct &gt; 0.10 (trade group vs market liquidity)</div>
+      </div>
+
+      <div class="modal-pattern-card" style="border-left-color:#ef4444;">
+        <div class="mpcard-head">
+          <span class="mpcard-badge" style="background:rgba(239,68,68,0.12);color:#ef4444;">user</span>
+          <span class="mpcard-name">Address Rotation</span>
+          <span class="mpcard-platform">Polymarket</span>
+        </div>
+        <p class="mpcard-desc">Systematic wallet switching with similar trade DNA (timing cadence, size signature, market focus). An evasion pattern that may indicate someone managing exposure across multiple addresses to limit per-account visibility.</p>
+        <div class="mpcard-threshold">trade_id sequence gap &lt;120s across &ge;2 wallets, same market</div>
+      </div>
+
+      <div class="modal-pattern-card" style="border-left-color:#ef4444;">
+        <div class="mpcard-head">
+          <span class="mpcard-badge" style="background:rgba(239,68,68,0.12);color:#ef4444;">jit</span>
+          <span class="mpcard-name">Just-in-Time</span>
+          <span class="mpcard-platform">Polymarket</span>
+        </div>
+        <p class="mpcard-desc">3 or more trades from a wallet cluster in the final 6 hours before market resolution. Same principle as the Kalshi pre-close surge: late concentration is a high-signal behaviour.</p>
+        <div class="mpcard-threshold">hoursToClose &lt; 6 &amp;&amp; tradeCount &ge; 3</div>
+      </div>
+
+    </div><!-- /polymarket patterns -->
+
+    <div class="modal-section-label" style="margin-top:20px;">Score gates by category</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;">
+      <div style="background:var(--bg-elevated);border-radius:var(--radius);padding:9px 12px;">
+        <div style="font-size:0.68rem;color:var(--text-secondary);margin-bottom:2px;">Politics / Geopolitics</div>
+        <div style="font-family:var(--font-mono);font-size:1rem;color:var(--accent);">63+</div>
+      </div>
+      <div style="background:var(--bg-elevated);border-radius:var(--radius);padding:9px 12px;">
+        <div style="font-size:0.68rem;color:var(--text-secondary);margin-bottom:2px;">Sports</div>
+        <div style="font-family:var(--font-mono);font-size:1rem;color:var(--accent);">65+</div>
+      </div>
+      <div style="background:var(--bg-elevated);border-radius:var(--radius);padding:9px 12px;">
+        <div style="font-size:0.68rem;color:var(--text-secondary);margin-bottom:2px;">Crypto / Economy</div>
+        <div style="font-family:var(--font-mono);font-size:1rem;color:var(--accent);">70+</div>
+      </div>
+      <div style="background:var(--bg-elevated);border-radius:var(--radius);padding:9px 12px;">
+        <div style="font-size:0.68rem;color:var(--text-secondary);margin-bottom:2px;">Climate / Other</div>
+        <div style="font-family:var(--font-mono);font-size:1rem;color:var(--accent);">72+</div>
+      </div>
+    </div>
+    <p style="font-size:0.68rem;color:var(--text-secondary);margin-top:8px;">
+      Score gates apply to Kalshi only. Polymarket flags use a flat 65+ gate.
+      Category gates reflect historical false-positive rates: noisier categories require higher confidence before flagging.
+    </p>
+
+  </div><!-- /modal-box -->
+</div><!-- /methodologyModal -->
+
 <!-- Polymarket drill panel -->
 <div class="p-drill-backdrop" id="p-drill-backdrop" onclick="P_closeDrillPanel()"></div>
 <div class="p-drill-panel" id="p-drill-panel">
@@ -1885,6 +2171,20 @@ function fmtNum(n, decimals) {
 function copyText(text) {
   navigator.clipboard.writeText(text).then(() => showToast('Copied!'), () => showToast('Copy failed', 'error'));
 }
+
+// Methodology modal
+function openMethodologyModal() {
+  document.getElementById('methodologyModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeMethodologyModal() {
+  document.getElementById('methodologyModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+// Close on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeMethodologyModal();
+});
 
 function toggleCollapsible(id) {
   const el = document.getElementById(id);
@@ -2000,7 +2300,8 @@ const P_PATTERN_DEFS = [
 // State
 let P_sessionAlerts = [];
 let P_flaggedWallets = {};
-let P_activeFilter = 'all';
+let P_activeFilter = 'all'; // pattern filter
+let P_catFilter    = 'all'; // category filter
 let P_scanPaused = false;
 let P_countdownSecs = 30;
 let P_countdownTimer = null;
@@ -2303,6 +2604,9 @@ function P_renderAlerts() {
   if (P_activeFilter !== 'all') {
     visible = visible.filter(a => a.patternIds.includes(P_activeFilter));
   }
+  if (P_catFilter !== 'all') {
+    visible = visible.filter(a => (a.category || '').toLowerCase() === P_catFilter);
+  }
   if (visible.length === 0) {
     empty.style.display = 'flex';
     const cards = container.querySelectorAll('.alert-card');
@@ -2392,17 +2696,26 @@ function P_toggleAlertCard(id) {
   if (chev) chev.classList.toggle('open');
 }
 
-// Filter pills
-function P_setupFilterPills() {
-  document.querySelectorAll('#p-filter-pills .pill').forEach(pill => {
-    pill.addEventListener('click', () => {
-      document.querySelectorAll('#p-filter-pills .pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      P_activeFilter = pill.dataset.filter;
-      P_renderAlerts();
-    });
+// Pattern filter
+function P_setPat(pat) {
+  P_activeFilter = pat;
+  document.querySelectorAll('#p-pattern-pills .pat-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.pat === pat);
   });
+  P_renderAlerts();
 }
+
+// Category filter
+function P_setCat(cat) {
+  P_catFilter = cat;
+  document.querySelectorAll('#p-cat-pills .pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.cat === cat);
+  });
+  P_renderAlerts();
+}
+
+// Legacy setup (no-op -- pills now use onclick directly)
+function P_setupFilterPills() {}
 
 // Countdown
 function P_startCountdown() {
@@ -2448,6 +2761,17 @@ function P_updatePatternCounters() {
   P_sessionAlerts.forEach(a => {
     a.patternIds.forEach(pid => { if (P_patternCounters.hasOwnProperty(pid)) P_patternCounters[pid]++; });
   });
+  // Update pill counts in filter bar
+  Object.keys(P_patternCounters).forEach(pid => {
+    const pc = document.getElementById('p-pc-' + pid);
+    if (pc) pc.textContent = P_patternCounters[pid];
+    // Dim zero-count pills (but only if not active)
+    const pill = document.querySelector('#p-pattern-pills .pat-pill.' + pid);
+    if (pill && P_activeFilter !== pid) {
+      pill.style.opacity = P_patternCounters[pid] === 0 ? '0.45' : '1';
+    }
+  });
+  // Update pattern analysis grid
   P_PATTERN_DEFS.forEach(p => {
     const el = document.getElementById('p-pattern-counter-' + p.id);
     if (el) el.textContent = P_patternCounters[p.id];
@@ -3000,6 +3324,7 @@ const K_SERIES_LABELS = {
 let K_sessionFlags = [];
 let K_marketsScanned = 0;
 let K_activeFilter = 'ALL';
+let K_patternFilter = 'ALL';
 let K_scoreThreshold = 60;
 let K_contractsThreshold = 1;
 let K_scanPaused = false;
@@ -3363,9 +3688,23 @@ function K_updatePatternCounters() {
   K_sessionFlags.forEach(f => { (f.patternIds || []).forEach(pid => { if (counts[pid] !== undefined) counts[pid]++; }); });
   const ids = ['jit','whale','pi','obi','sweep'];
   ids.forEach(id => {
-    const el = document.getElementById('k-pn-' + id);
-    if (el) el.textContent = counts[id];
+    // Update new pill counts
+    const pc = document.getElementById('k-pc-' + id);
+    if (pc) pc.textContent = counts[id];
+    // Dim pills that have zero hits (but don't disable -- pattern may appear later)
+    const pill = document.querySelector('#k-patternPills .pat-pill.' + id);
+    if (pill && K_patternFilter !== id) {
+      pill.style.opacity = counts[id] === 0 ? '0.45' : '1';
+    }
   });
+}
+
+function K_setPat(pat) {
+  K_patternFilter = pat;
+  document.querySelectorAll('#k-patternPills .pat-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.pat === pat);
+  });
+  K_renderFlags();
 }
 
 function K_setCat(cat) {
@@ -3378,15 +3717,18 @@ function K_setCat(cat) {
 
 function K_onSliderChange() {
   K_scoreThreshold = parseInt(document.getElementById('k-scoreSlider').value);
-  K_contractsThreshold = parseInt(document.getElementById('k-contractsSlider').value);
+  const cSlider = document.getElementById('k-contractsSlider');
+  if (cSlider) K_contractsThreshold = parseInt(cSlider.value);
   document.getElementById('k-scoreSliderVal').textContent = K_scoreThreshold;
-  document.getElementById('k-contractsSliderVal').textContent = K_contractsThreshold;
+  const csv = document.getElementById('k-contractsSliderVal');
+  if (csv) csv.textContent = K_contractsThreshold;
   K_renderFlags();
 }
 
 function K_getFilteredFlags() {
   return K_sessionFlags.filter(f => {
     if (K_activeFilter !== 'ALL' && f.category !== K_activeFilter) return false;
+    if (K_patternFilter !== 'ALL' && !(f.patternIds || []).includes(K_patternFilter)) return false;
     if (f.score < K_scoreThreshold) return false;
     if (f.totalContracts < K_contractsThreshold) return false;
     return true;
